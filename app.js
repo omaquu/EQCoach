@@ -1,6 +1,6 @@
 /**
  * Vocal DSP Coach & EQ Assistant
- * Real-time Speech Analysis, Microphone Profiling & DSP Recommender
+ * Real-time Speech Analysis, Microphone Profiling, Nasality Detection & DSP Recommender
  * 100% Client-Side Web Audio API (GitHub Pages Compatible)
  */
 
@@ -44,6 +44,16 @@ const I18N = {
     optRadio: "📻 Warm & Deep (Broadcast Radio / Low-End Authority)",
     optNatural: "🌿 Natural & Transparent (Acoustic Speech)",
     optGaming: "🎮 Punchy & Cutting (Discord / Gaming / Noisy Room)",
+    traitsLabel: "Customize Voice Correction / Remove Specific Flaws:",
+    nasalDetectedLabel: "Nasal Peak Detected:",
+    traitNasalName: "Nasal Voice / Honkiness",
+    traitNasalDesc: "Auto-detects & notches your exact nasal resonance (800-1800 Hz)",
+    traitHighName: "High / Thin Voice",
+    traitHighDesc: "Adds chest body (200-260 Hz) & softens shrill treble",
+    traitLowName: "Deep / Boomy Voice",
+    traitLowDesc: "Tightens heavy bass (70 Hz) & adds subtle air articulation",
+    traitHarshName: "Harsh / Piercing",
+    traitHarshDesc: "Tames fatiguing 3.5-5 kHz bite & sibilance",
     metricPitch: "Fundamental Pitch",
     metricPitchSub: "F0 vocal center",
     metricMud: "Mud / Resonance",
@@ -132,6 +142,16 @@ const I18N = {
     optRadio: "📻 Lämmin & Syvä (Radio / Voiceover / Broadcast Low-End)",
     optNatural: "🌿 Luonnollinen & Neutraali (Akustinen puhe)",
     optGaming: "🎮 Läpitunkeva (Discord / Peliääni / Meluisa tila)",
+    traitsLabel: "Äänen erityispiirteiden korjaus / Ongelmien poisto:",
+    nasalDetectedLabel: "Tunnistettu nenäresonanssi:",
+    traitNasalName: "Nenäkäs ääni / Honkiness",
+    traitNasalDesc: "Paikantaa automaattisesti nenäsointisi tarkan taajuuden (800–1800 Hz) ja leikkaa sen",
+    traitHighName: "Korkea / Ohut ääni",
+    traitHighDesc: "Lisää rintakehon lämpöä (200–260 Hz) ja rauhoittaa kimeää yläpäätä",
+    traitLowName: "Matala / Jylisevä ääni",
+    traitLowDesc: "Kiinteyttää matalaa kumua (70 Hz) ja lisää selkeyttävää ilmaa",
+    traitHarshName: "Kireä / Terävä ääni",
+    traitHarshDesc: "Pehmentää korvia rasittavaa 3.5–5 kHz purevuutta ja ässiä",
     metricPitch: "Perustaajuus (F0)",
     metricPitchSub: "Äänen pohjasävel",
     metricMud: "Mutaisuus",
@@ -216,7 +236,6 @@ const MIC_PROFILES = {
   },
   sm7b: {
     name: "Shure SM7B",
-    // Famous for thick, warm low-mids and dark rolled-off top end.
     hpfOffset: 0,
     mudCutOffset: -0.5,
     boxCutOffset: 0,
@@ -292,6 +311,15 @@ let auditionGainNode = null;
 let isAuditionMonitoring = false;
 let auditionMode = 'raw';
 
+// Active Custom Voice Traits
+let activeVoiceTraits = {
+  nasal: false,
+  highPitch: false,
+  lowPitch: false,
+  harsh: false
+};
+let detectedNasalFreq = 1180; // Live auto-detected nasal resonance frequency in Hz
+
 // Audition DSP Nodes
 let auditionHPF = null;
 let auditionLowMud = null;
@@ -360,6 +388,13 @@ const troubleshootToggleBtn = document.getElementById('troubleshootToggleBtn');
 const troubleshootBox = document.getElementById('troubleshootBox');
 const closeTroubleshootBtn = document.getElementById('closeTroubleshootBtn');
 const troubleshootGridContent = document.getElementById('troubleshootGridContent');
+
+const detectedNasalBadge = document.getElementById('detectedNasalBadge');
+const detectedNasalFreqText = document.getElementById('detectedNasalFreqText');
+const traitNasalBtn = document.getElementById('traitNasalBtn');
+const traitHighPitchBtn = document.getElementById('traitHighPitchBtn');
+const traitLowPitchBtn = document.getElementById('traitLowPitchBtn');
+const traitHarshBtn = document.getElementById('traitHarshBtn');
 
 const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
@@ -492,11 +527,11 @@ function renderExplainerContent(lang) {
   if (lang === 'fi') {
     explainerBodyContent.innerHTML = `
       <div class="explainer-col">
-        <h4><span>📊</span> 1. Spektrianalyysi (FFT)</h4>
-        <p>Sovellus lukee mikrofonisi signaalia 4096 pisteen FFT-tarkkuudella. Puheen aikana se mittaa 8 kriittistä äänivyöhykettä: matalan jyminän (&lt;80Hz), rintakehon (80-240Hz), huonemutaisuuden (240-480Hz), tynnyrisoinnin (480-1k) ja ässäpiikit (6-8.5k).</p>
+        <h4><span>📊</span> 1. Spektrianalyysi & Nenäskanneri</h4>
+        <p>Sovellus lukee mikrofonisi signaalia 4096 pisteen FFT-tarkkuudella. Puheen aikana se mittaa 8 kriittistä äänivyöhykettä ja skannaa erityisesti 850–1800 Hz aluetta löytääkseen äänesi tarkan nenäsointipiikin (nasal formant peak).</p>
       </div>
       <div class="explainer-col">
-        <h4><span>🎙️</span> 2. Mikrofonin korjausprofiili (RE20 vs muut)</h4>
+        <h4><span>🎙️</span> 2. Mikrofonin korjausprofiili (RE20)</h4>
         <p>Eri mikrofoneilla on tunnetut akustiset ominaisuudet:</p>
         <ul>
           <li><strong>Electro-Voice RE20:</strong> Variable-D -rakenteen ansiosta mikki ei kärsi läheisyyskuminasta. Siksi RE20:lle ei tule tehdä raskasta 300-600 Hz leikkausta, jottei ääni koverru ontoksi.</li>
@@ -511,11 +546,11 @@ function renderExplainerContent(lang) {
   } else {
     explainerBodyContent.innerHTML = `
       <div class="explainer-col">
-        <h4><span>📊</span> 1. Live Spectral Measurement (FFT)</h4>
-        <p>The app continuously inspects your microphone using a high-resolution 4096-point FFT. During speech, it measures energy across 8 key vocal zones: sub-bass rumble (<80Hz), chest resonance (80-240Hz), room mud (240-480Hz), cardboard boxiness (480-1k), and sibilance spikes (6-8.5k).</p>
+        <h4><span>📊</span> 1. Live Spectral Measurement & Nasality Scanner</h4>
+        <p>The app continuously inspects your microphone using a 4096-point FFT. During speech, it measures 8 key vocal zones and scans the 850-1800 Hz range to locate your exact nasal formant resonance peak.</p>
       </div>
       <div class="explainer-col">
-        <h4><span>🎙️</span> 2. Microphone Acoustic Contours (RE20 vs Others)</h4>
+        <h4><span>🎙️</span> 2. Microphone Acoustic Contours (RE20)</h4>
         <p>Different microphones have distinct acoustic signatures:</p>
         <ul>
           <li><strong>Electro-Voice RE20:</strong> Features Variable-D ports eliminating proximity effect. Its low-mids are naturally flat, so heavy 300Hz-600Hz scooping must be avoided to keep vocal body!</li>
@@ -541,8 +576,8 @@ function renderTroubleshootContent(lang) {
 
       <div class="troubleshoot-item">
         <h4>2. Ääni kuulostaa pistävältä, kireältä tai nenäkkäältä?</h4>
-        <p><strong>Syy:</strong> Artikulaatiota / preesensiä (3–4 kHz) on nostettu liikaa (+2.5...3.5 dB). Korva väsyy nopeasti, jos tämä alue on liian voimakas, ja ääni alkaa kuulostaa puhelinmaiselta.</p>
-        <div class="troubleshoot-fix">✅ <strong>Korjaus:</strong> Laske EQ 3 (Selkeys) vahvistus arvoon +0.5...1.0 dB tai jätä 0 dB:iin. RE20:ssä on luonnostaan erinomainen artikulaatio ilman keinotekoista nostoa.</div>
+        <p><strong>Syy:</strong> Artikulaatiota / preesensiä (3–4 kHz) on nostettu liikaa (+2.5...3.5 dB), tai äänessäsi on kapea nenäresonanssi 1000–1400 Hz alueella.</p>
+        <div class="troubleshoot-fix">✅ <strong>Korjaus:</strong> Kytke päälle ylhäältä <strong>"👃 Nenäkäs ääni"</strong>, jolloin sovellus etsii tarkan nenätaajuutesi ja tekee siihen kapean täsmäleikkauksen. Laske samalla EQ 3 (Selkeys) arvoon +0.5 dB.</div>
       </div>
 
       <div class="troubleshoot-item">
@@ -561,8 +596,8 @@ function renderTroubleshootContent(lang) {
 
       <div class="troubleshoot-item">
         <h4>2. Voice sounds harsh, sharp, or nasal?</h4>
-        <p><strong>Cause:</strong> Over-boosting presence (3–4 kHz). Boosting more than +1.5 dB on speech creates ear fatigue, harsh sibilance, and a telephone-like honk.</p>
-        <div class="troubleshoot-fix">✅ <strong>Fix:</strong> Lower Presence (EQ 3) to +0.5 dB or 0 dB. The RE20 already has natural diction and doesn't need artificial hyping.</div>
+        <p><strong>Cause:</strong> Over-boosting presence (3–4 kHz) or unaddressed nasal resonance around 1000-1400 Hz.</p>
+        <div class="troubleshoot-fix">✅ <strong>Fix:</strong> Toggle on <strong>"👃 Nasal Voice"</strong> above to auto-detect and notch your exact nasal peak. Lower Presence (EQ 3) to +0.5 dB.</div>
       </div>
 
       <div class="troubleshoot-item">
@@ -615,6 +650,12 @@ function setupEventListeners() {
   eqIntensitySelect.addEventListener('change', () => {
     recalculateRecommendations();
   });
+
+  // Voice Trait Toggles
+  traitNasalBtn.addEventListener('click', () => toggleVoiceTrait('nasal'));
+  traitHighPitchBtn.addEventListener('click', () => toggleVoiceTrait('highPitch'));
+  traitLowPitchBtn.addEventListener('click', () => toggleVoiceTrait('lowPitch'));
+  traitHarshBtn.addEventListener('click', () => toggleVoiceTrait('harsh'));
 
   howItWorksBtn.addEventListener('click', () => {
     howItWorksModal.classList.toggle('hidden');
@@ -677,6 +718,72 @@ function setupEventListeners() {
   copySummaryBtn.addEventListener('click', copySummaryToClipboard);
   copyObsBtn.addEventListener('click', copyObsToClipboard);
   copyApoBtn.addEventListener('click', copyApoToClipboard);
+}
+
+// --- VOICE TRAIT MANAGEMENT ---
+function toggleVoiceTrait(trait) {
+  activeVoiceTraits[trait] = !activeVoiceTraits[trait];
+
+  // High pitch and low pitch are mutually exclusive
+  if (trait === 'highPitch' && activeVoiceTraits.highPitch) {
+    activeVoiceTraits.lowPitch = false;
+  } else if (trait === 'lowPitch' && activeVoiceTraits.lowPitch) {
+    activeVoiceTraits.highPitch = false;
+  }
+
+  updateVoiceTraitUI();
+  recalculateRecommendations();
+}
+
+function updateVoiceTraitUI() {
+  traitNasalBtn.classList.toggle('active', activeVoiceTraits.nasal);
+  traitHighPitchBtn.classList.toggle('active', activeVoiceTraits.highPitch);
+  traitLowPitchBtn.classList.toggle('active', activeVoiceTraits.lowPitch);
+  traitHarshBtn.classList.toggle('active', activeVoiceTraits.harsh);
+
+  if (activeVoiceTraits.nasal) {
+    detectedNasalBadge.classList.remove('hidden');
+    detectedNasalFreqText.textContent = `${detectedNasalFreq} Hz`;
+  } else {
+    detectedNasalBadge.classList.add('hidden');
+  }
+}
+
+// --- ACOUSTIC NASALITY FORMANT DETECTOR ---
+// Scans FFT spectrum in 850 Hz - 1850 Hz range to locate exact resonance peak
+function detectNasalResonancePeak(spectrum, sampleRate) {
+  if (!spectrum || spectrum.length === 0) return 1180;
+  const nyquist = sampleRate / 2;
+  const binWidth = nyquist / spectrum.length;
+
+  const startBin = Math.max(1, Math.floor(850 / binWidth));
+  const endBin = Math.min(spectrum.length - 2, Math.ceil(1850 / binWidth));
+
+  let maxVal = -999;
+  let peakBin = Math.floor(1180 / binWidth);
+
+  for (let b = startBin + 1; b < endBin; b++) {
+    if (spectrum[b] > spectrum[b - 1] && spectrum[b] > spectrum[b + 1]) {
+      const localAvg = (spectrum[b - 2] + spectrum[b + 2]) / 2;
+      const prom = spectrum[b] - localAvg;
+      if (spectrum[b] > maxVal && prom >= 0.5) {
+        maxVal = spectrum[b];
+        peakBin = b;
+      }
+    }
+  }
+
+  // Parabolic interpolation around peakBin
+  const y1 = spectrum[peakBin - 1] || maxVal;
+  const y2 = spectrum[peakBin];
+  const y3 = spectrum[peakBin + 1] || maxVal;
+  const denom = 2 * (2 * y2 - y1 - y3);
+  const delta = denom !== 0 ? (y1 - y3) / denom : 0;
+  const exactBin = peakBin + delta;
+
+  let detectedFreq = Math.round(exactBin * binWidth);
+  detectedFreq = Math.max(850, Math.min(1850, detectedFreq));
+  return detectedFreq;
 }
 
 // --- MICROPHONE MANAGEMENT ---
@@ -1031,6 +1138,13 @@ function processTestResults() {
   const nyquist = sampleRate / 2;
   const binWidth = nyquist / numBins;
 
+  // Auto-detect nasal resonance peak accurately from the averaged voice spectrum
+  const nasalPeak = detectNasalResonancePeak(avgSpectrum, sampleRate);
+  if (nasalPeak >= 850 && nasalPeak <= 1850) {
+    detectedNasalFreq = nasalPeak;
+    if (detectedNasalFreqText) detectedNasalFreqText.textContent = `${detectedNasalFreq} Hz`;
+  }
+
   function getBandAverage(lowF, highF) {
     const startBin = Math.max(0, Math.floor(lowF / binWidth));
     const endBin = Math.min(numBins - 1, Math.ceil(highF / binWidth));
@@ -1066,17 +1180,13 @@ function processTestResults() {
   document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
 }
 
-// --- RECOMMENDATION ENGINE (WITH INTENSITY FACTOR & ENHANCED DE-ESSER) ---
+// --- RECOMMENDATION ENGINE (WITH NASAL AUTO-NOTCH & TRAITS) ---
 function recalculateRecommendations() {
   const target = targetToneSelect.value;
   const b = benchmarkData;
   const micModelKey = micModelSelect.value || 'generic_dynamic';
   const micProfile = MIC_PROFILES[micModelKey] || MIC_PROFILES.generic_dynamic;
 
-  // EQ Intensity Factor:
-  // 'subtle' = 0.5x (Gentle, musical, preserves warmth, avoids thin/hollow sound)
-  // 'moderate' = 0.75x
-  // 'full' = 1.0x
   const intensityMode = eqIntensitySelect ? eqIntensitySelect.value : 'subtle';
   let intensityFactor = 0.5;
   if (intensityMode === 'moderate') intensityFactor = 0.75;
@@ -1162,7 +1272,23 @@ function recalculateRecommendations() {
     }
   }
 
-  // Update Metrics Badges
+  // Append voice traits feedback to diagnosis
+  if (activeVoiceTraits.nasal) {
+    diagHtml += isFi 
+      ? `<br>👃 <strong>Nenäkkyyden poisto aktiivinen:</strong> Tunnistettu nenäresonanssi taajuudella <strong>${detectedNasalFreq} Hz</strong>. Kapea suodatus kytketty poistamaan torvisointi.`
+      : `<br>👃 <strong>Nasal Notch Active:</strong> Detected nasal resonance at <strong>${detectedNasalFreq} Hz</strong>. Targeted surgical cut applied to remove honkiness.`;
+  }
+  if (activeVoiceTraits.highPitch) {
+    diagHtml += isFi 
+      ? `<br>📢 <strong>Korkean/ohuen äänen korjaus:</strong> Rintakehoa tuettu ja kimeää yläpäätä rauhoitettu.`
+      : `<br>📢 <strong>High/Thin Voice Treatment:</strong> Added lower body warmth and softened upper mid bite.`;
+  }
+  if (activeVoiceTraits.lowPitch) {
+    diagHtml += isFi 
+      ? `<br>🔊 <strong>Matalan/jylisevän äänen korjaus:</strong> HPF pidetty 68 Hz:ssä rintaäänen säilyttämiseksi, mutaa tiukennettu ja lisätty ilmaa.`
+      : `<br>🔊 <strong>Deep/Boomy Voice Treatment:</strong> HPF kept at 68 Hz to protect fundamental bass, boomy mud tightened.`;
+  }
+
   metricLow.textContent = `${b.fundamentalFreq} Hz`;
   metricMud.textContent = mudDiag;
   metricPresence.textContent = presDiag;
@@ -1176,9 +1302,17 @@ function recalculateRecommendations() {
   let mudCutGainRaw = -2.5 + micProfile.mudCutOffset;
   let mudCutQ = 1.6;
 
-  let boxCutFreq = 620;
-  let boxCutGainRaw = (micModelKey === 're20') ? 0.0 : (-1.5 + (micProfile.boxCutOffset || 0));
-  let boxCutQ = 1.9;
+  let midBandFreq = 620;
+  let midBandGainRaw = (micModelKey === 're20') ? 0.0 : (-1.5 + (micProfile.boxCutOffset || 0));
+  let midBandQ = 1.9;
+  let isNasalActive = activeVoiceTraits.nasal;
+
+  // If Nasal trait is active, configure midBand as the surgical nasal notch!
+  if (isNasalActive) {
+    midBandFreq = detectedNasalFreq || 1180;
+    midBandGainRaw = -2.5;
+    midBandQ = 3.2; // Surgical narrow notch
+  }
 
   let presBoostFreq = 3400;
   let presBoostGainRaw = 2.0 + micProfile.presenceOffset;
@@ -1216,7 +1350,6 @@ function recalculateRecommendations() {
     airShelfGainRaw = 0.5;
   } else if (target === 'natural') {
     mudCutGainRaw = Math.min(0, mudCutGainRaw + 1.0);
-    boxCutGainRaw = 0.0;
     presBoostGainRaw = 0.5;
     airShelfGainRaw = 0.5;
   } else if (target === 'gaming') {
@@ -1226,9 +1359,25 @@ function recalculateRecommendations() {
     presBoostFreq = 3200;
   }
 
-  // Scale gains with intensityFactor (Crucial: prevents over-EQing and hollow sound!)
+  // Modulate according to Voice Traits
+  if (activeVoiceTraits.highPitch) {
+    lowWarmthGainRaw += 1.8;
+    presBoostGainRaw = Math.max(0, presBoostGainRaw - 1.5);
+    hpfFreq = Math.max(88, hpfFreq);
+  }
+  if (activeVoiceTraits.lowPitch) {
+    hpfFreq = Math.min(68, hpfFreq);
+    lowWarmthGainRaw = Math.min(0, lowWarmthGainRaw - 1.0);
+    airShelfGainRaw += 1.5;
+  }
+  if (activeVoiceTraits.harsh) {
+    presBoostGainRaw = Math.max(0, presBoostGainRaw - 1.5);
+    deharshGainRaw -= 1.5;
+  }
+
+  // Scale gains with intensityFactor
   const mudCutGain = Number((mudCutGainRaw * intensityFactor).toFixed(1));
-  const boxCutGain = Number((boxCutGainRaw * intensityFactor).toFixed(1));
+  const midBandGain = Number((midBandGainRaw * intensityFactor).toFixed(1));
   const presBoostGain = Number((presBoostGainRaw * intensityFactor).toFixed(1));
   const deharshGain = Number((deharshGainRaw * intensityFactor).toFixed(1));
   const airShelfGain = Number((airShelfGainRaw * intensityFactor).toFixed(1));
@@ -1258,27 +1407,33 @@ function recalculateRecommendations() {
       q: mudCutQ.toFixed(1),
       why: isFi 
         ? (micModelKey === 're20' 
-            ? 'RE20 ei kerrytä läheisyyskuminaa. Pidetään leikkaus hyvin pienenä (-0.5...-1 dB), jotta rintaääni ei katoa!' 
+            ? 'RE20 ei kerrytä läheisyyskuminaa. Pidetään leikkaus pienenä, jotta rintaääni säilyy!' 
             : 'Siivoaa tunkkaista huonekaiun kumua ja läheisyysvaikutusta säilyttäen puheen kehon.')
         : (micModelKey === 're20'
-            ? 'RE20 has Variable-D (no proximity boom). Kept minimal (-0.5 to -1 dB) so voice remains full and rich.'
+            ? 'RE20 has Variable-D (no proximity boom). Kept minimal so voice remains full and rich.'
             : 'Gently cleans up muddy room reflections and proximity boom without hollowing out speech.')
     },
     {
-      step: 'EQ 2',
-      title: isFi ? 'Laatikkomaisuuden siivous (Boxy Mid)' : 'Cardboard Boxiness Cut (Mid)',
+      step: isNasalActive ? 'EQ 2 (Nenä)' : 'EQ 2',
+      title: isNasalActive 
+        ? (isFi ? 'Nenäkkyyden täsmäleikkaus (Nasal Cut)' : 'Nasal Resonance Notch (Nasal Cut)')
+        : (isFi ? 'Laatikkomaisuuden siivous (Boxy Mid)' : 'Cardboard Boxiness Cut (Mid)'),
       type: 'Bell / Peaking',
-      freq: `${Math.round(boxCutFreq)} Hz`,
-      gain: `${boxCutGain.toFixed(1)} dB`,
-      gainClass: boxCutGain === 0 ? 'neutral' : 'cut',
-      q: boxCutQ.toFixed(1),
-      why: isFi
-        ? (boxCutGain === 0 
-            ? 'Pahvisuuden leikkaus jätetty neutraaliksi (0 dB), jotta äänesi ei muutu ohueksi.' 
-            : 'Puhdistaa tynnyrimäistä onttoa sointia 600 Hz alueelta.')
-        : (boxCutGain === 0
-            ? 'Boxiness cut left flat (0 dB) to prevent thinning out your natural voice.'
-            : 'Trims hollow, plastic cardboard reflections around 620 Hz.')
+      freq: `${Math.round(midBandFreq)} Hz`,
+      gain: `${midBandGain.toFixed(1)} dB`,
+      gainClass: midBandGain === 0 ? 'neutral' : 'cut',
+      q: midBandQ.toFixed(1),
+      why: isNasalActive
+        ? (isFi 
+            ? `Täsmäleikkaus havaittuun ${midBandFreq} Hz nenäresonanssiin poistaa torvisoinnin tekemättä äänestä ohutta.` 
+            : `Surgical notch at detected ${midBandFreq} Hz nasal peak eliminates honkiness without thinning speech.`)
+        : (isFi
+            ? (midBandGain === 0 
+                ? 'Pahvisuuden leikkaus jätetty neutraaliksi (0 dB), jotta äänesi ei muutu ohueksi.' 
+                : 'Puhdistaa tynnyrimäistä onttoa sointia 600 Hz alueelta.')
+            : (midBandGain === 0
+                ? 'Boxiness cut left flat (0 dB) to prevent thinning out your natural voice.'
+                : 'Trims hollow, plastic cardboard reflections around 620 Hz.'))
     },
     {
       step: 'EQ 3',
@@ -1299,7 +1454,18 @@ function recalculateRecommendations() {
     { band: 1, type: 'High-Pass (HPF)', freq: Math.round(hpfFreq), gain: 0, q: 0.71, gainDisplay: '18 dB/oct', gainClass: 'pass', why: isFi ? 'Eliminoi pöydän tärinät, tuulettimet ja plosiivit.' : 'Eliminates desk thumps, AC hum, and plosive wind blasts.' },
     { band: 2, type: 'Low Bell / Warmth', freq: Math.round(lowWarmthFreq), gain: lowWarmthGain, q: 1.4, gainDisplay: lowWarmthGain > 0 ? `+${lowWarmthGain.toFixed(1)} dB` : '0 dB', gainClass: lowWarmthGain > 0 ? 'boost' : 'pass', why: isFi ? 'Rintaäänen ja perussävelen miellyttävä täyteläisyys.' : 'Richness and body around fundamental voice frequencies.' },
     { band: 3, type: 'Bell (Mud)', freq: Math.round(mudCutFreq), gain: mudCutGain, q: mudCutQ, gainDisplay: `${mudCutGain.toFixed(1)} dB`, gainClass: mudCutGain === 0 ? 'pass' : 'cut', why: isFi ? 'Puhdistaa huoneheijastukset ilman onttoutta.' : 'Cleans up boomy room acoustic reflections.' },
-    { band: 4, type: 'Bell (Boxy)', freq: Math.round(boxCutFreq), gain: boxCutGain, q: boxCutQ, gainDisplay: `${boxCutGain.toFixed(1)} dB`, gainClass: boxCutGain === 0 ? 'pass' : 'cut', why: isFi ? 'Poistaa onttoa, muovista tai tynnyrimäistä sointia.' : 'Cuts hollow, cardboard resonances.' },
+    { 
+      band: 4, 
+      type: isNasalActive ? 'Bell (Nasal Notch)' : 'Bell (Boxy)', 
+      freq: Math.round(midBandFreq), 
+      gain: midBandGain, 
+      q: midBandQ, 
+      gainDisplay: `${midBandGain.toFixed(1)} dB`, 
+      gainClass: midBandGain === 0 ? 'pass' : 'cut', 
+      why: isNasalActive 
+        ? (isFi ? `Havaittu nenäresonanssi (${midBandFreq} Hz).` : `Auto-detected nasal formant peak (${midBandFreq} Hz).`)
+        : (isFi ? 'Poistaa onttoa, muovista tai tynnyrimäistä sointia.' : 'Cuts hollow, cardboard resonances.') 
+    },
     { band: 5, type: 'Bell (Presence)', freq: Math.round(presBoostFreq), gain: presBoostGain, q: presBoostQ, gainDisplay: presBoostGain > 0 ? `+${presBoostGain.toFixed(1)} dB` : '0 dB', gainClass: presBoostGain > 0 ? 'boost' : 'pass', why: isFi ? 'Parantaa puheen ymmärrettävyyttä ja läsnäoloa.' : 'Boosts speech intelligibility and crisp consonant clarity.' },
     { band: 6, type: 'Bell (De-Harsh)', freq: Math.round(deharshFreq), gain: deharshGain, q: deharshQ, gainDisplay: `${deharshGain.toFixed(1)} dB`, gainClass: deharshGain === 0 ? 'pass' : 'cut', why: isFi ? 'Pehmentää teräviä mikrofoniheijastuksia ja ässiä.' : 'Smooths piercing resonance peaks & harsh sibilance.' },
     { band: 7, type: 'High Shelf (Air)', freq: Math.round(airShelfFreq), gain: airShelfGain, q: 0.71, gainDisplay: `+${airShelfGain.toFixed(1)} dB`, gainClass: 'boost', why: isFi ? 'Lisää studiomaista ilmavuutta äänen yläpäähän.' : 'Adds studio breathiness and open top-end sheen.' }
@@ -1331,8 +1497,8 @@ function recalculateRecommendations() {
   let deessFreq = Math.round(deharshFreq);
   let deessThreshold = Math.round(b.rmsDb - 4);
   deessThreshold = Math.max(-30, Math.min(-16, deessThreshold));
-  let deessRange = sibilanceHarshness > -3.0 ? -6.0 : -4.5;
-  let deessWidthQ = 2.0; // Medium-narrow band targeting harsh frequencies
+  let deessRange = sibilanceHarshness > -3.0 || activeVoiceTraits.harsh ? -6.0 : -4.5;
+  let deessWidthQ = 2.0;
 
   // --- DYNAMICS: NOISE GATE ---
   let gateOpenThreshold = Math.round(b.noiseFloorDb + 7);
@@ -1471,7 +1637,6 @@ function renderDynamicsCards() {
     ? '<strong>Vinkki:</strong> Attack 18ms päästää puheen alun terävät konsonantit (k, p, t) läpi ennen kuin kompressio puree, jolloin puhe säilyy luonnollisena.'
     : '<strong>Tip:</strong> Attack of 18ms lets initial transients (k, p, t) punch through before clamping down, preserving natural speech articulation.';
 
-  // DE-ESSER WITH EXPLICIT RANGE & WIDTH
   const deess = currentRecommendations.deesser;
   deessParamsContainer.innerHTML = `
     <div class="param-pill">
@@ -1554,6 +1719,15 @@ function renderLoop() {
   const pitch = estimatePitch(timeData, audioCtx.sampleRate);
   if (pitch > 65 && pitch < 350 && rmsDb > -38) {
     pitchValueText.textContent = `${Math.round(pitch)} Hz`;
+  }
+
+  // Live auto-detection of nasal formant peak during active speech
+  if (rmsDb > -38 && freqData) {
+    const liveNasal = detectNasalResonancePeak(freqData, audioCtx.sampleRate);
+    if (liveNasal >= 850 && liveNasal <= 1850) {
+      detectedNasalFreq = Math.round(detectedNasalFreq * 0.9 + liveNasal * 0.1);
+      if (detectedNasalFreqText) detectedNasalFreqText.textContent = `${detectedNasalFreq} Hz`;
+    }
   }
 
   if (isTesting) {
@@ -1818,16 +1992,20 @@ function copySummaryToClipboard() {
   const r = currentRecommendations;
   const isFi = currentLang === 'fi';
 
+  const traitsStr = Object.keys(activeVoiceTraits).filter(k => activeVoiceTraits[k]).join(', ') || 'None';
+
   const text = isFi ? `=== VOCAL DSP COACH - ÄÄNIPROFIILI JA SUOSITUKSET ===
 Mikrofonimalli: ${r.micProfile.name}
 EQ-voimakkuus: ${r.intensityMode.toUpperCase()}
+Aktiiviset korjaukset: ${traitsStr}
+Tunnistettu nenäresonanssi: ${detectedNasalFreq} Hz
 Tavoitetyyli: ${r.target.toUpperCase()}
 Mittaustulokset: F0: ${benchmarkData.fundamentalFreq} Hz, Kohinataso: ${benchmarkData.noiseFloorDb.toFixed(1)} dBFS, Dynamiikka: ${benchmarkData.crestFactor.toFixed(1)} dB
 
 1. HELPPO TILA (HPF + 3 EQ-ALUETTA):
 - HPF: ${r.easyCards[0].freq}
 - EQ 1 (Muta): ${r.easyCards[1].freq} | Gain: ${r.easyCards[1].gain} | Q: ${r.easyCards[1].q}
-- EQ 2 (Pahvi): ${r.easyCards[2].freq} | Gain: ${r.easyCards[2].gain} | Q: ${r.easyCards[2].q}
+- ${r.easyCards[2].title}: ${r.easyCards[2].freq} | Gain: ${r.easyCards[2].gain} | Q: ${r.easyCards[2].q}
 - EQ 3 (Selkeys): ${r.easyCards[3].freq} | Gain: ${r.easyCards[3].gain} | Q: ${r.easyCards[3].q}
 
 2. PARAMETRINEN EQ (EDISTYNYT):
@@ -1840,13 +2018,15 @@ ${r.advEq.map(b => `Band ${b.band} [${b.type}]: ${b.freq} Hz | Gain: ${b.gainDis
 ` : `=== VOCAL DSP COACH - VOICE PROFILE & RECOMMENDATIONS ===
 Microphone Model: ${r.micProfile.name}
 EQ Intensity: ${r.intensityMode.toUpperCase()}
+Active Traits: ${traitsStr}
+Detected Nasal Peak: ${detectedNasalFreq} Hz
 Target Style: ${r.target.toUpperCase()}
 Measurements: F0: ${benchmarkData.fundamentalFreq} Hz, Noise Floor: ${benchmarkData.noiseFloorDb.toFixed(1)} dBFS, Crest Factor: ${benchmarkData.crestFactor.toFixed(1)} dB
 
 1. EASY MODE (HPF + 3 EQ BANDS):
 - HPF: ${r.easyCards[0].freq}
 - EQ 1 (Mud Cut): ${r.easyCards[1].freq} | Gain: ${r.easyCards[1].gain} | Q: ${r.easyCards[1].q}
-- EQ 2 (Boxiness Cut): ${r.easyCards[2].freq} | Gain: ${r.easyCards[2].gain} | Q: ${r.easyCards[2].q}
+- ${r.easyCards[2].title}: ${r.easyCards[2].freq} | Gain: ${r.easyCards[2].gain} | Q: ${r.easyCards[2].q}
 - EQ 3 (Presence Boost): ${r.easyCards[3].freq} | Gain: ${r.easyCards[3].gain} | Q: ${r.easyCards[3].q}
 
 2. ADVANCED PARAMETRIC EQ:
@@ -1881,7 +2061,8 @@ Lisää mikrofoniisi OBS:ssä suodattimet (Filters) tässä järjestyksessä:
 2. TAAJUUSKORJAIN (3-Band EQ tai VST EQ):
    - HPF: ${r.advEq[0].freq} Hz
    - Matalat (Mud): ${r.advEq[2].gainDisplay} (${r.advEq[2].freq} Hz)
-   - Keskialue (Mid): ${r.advEq[4].gainDisplay} (${r.advEq[4].freq} Hz)
+   - Keskialue (Nenä / Pahvi): ${r.advEq[3].gainDisplay} (${r.advEq[3].freq} Hz)
+   - Preesens (Artikulaatio): ${r.advEq[4].gainDisplay} (${r.advEq[4].freq} Hz)
    - Korkeat (High): +${r.advEq[6].gain.toFixed(1)} dB (11 kHz)
 
 3. KOMPRESSORI (Compressor):
@@ -1913,7 +2094,8 @@ Add filters to your microphone in OBS Studio in this order:
 2. 3-BAND EQ OR PARAMETRIC VST (EQ):
    - HPF: High-pass at ${r.advEq[0].freq} Hz
    - Low: Mud cut ${r.advEq[2].gainDisplay} at ${r.advEq[2].freq} Hz
-   - Mid: Presence boost ${r.advEq[4].gainDisplay} at ${r.advEq[4].freq} Hz
+   - Mid (Nasal/Boxy Notch): ${r.advEq[3].gainDisplay} at ${r.advEq[3].freq} Hz
+   - Presence: Boost ${r.advEq[4].gainDisplay} at ${r.advEq[4].freq} Hz
    - High: Air shelf +${r.advEq[6].gain.toFixed(1)} dB at 11 kHz
 
 3. COMPRESSOR:

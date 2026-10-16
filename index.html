@@ -247,6 +247,49 @@
               <span class="m-sub" data-i18n="metricDynamicSub">Crest Factor (Peak-RMS)</span>
             </div>
           </div>
+
+          <!-- Specific Voice Problems / Traits (Nasal, High, Low, Harsh) -->
+          <div class="voice-traits-section">
+            <div class="traits-title-row">
+              <span class="traits-label"><strong data-i18n="traitsLabel">Remove Problem Voice Characteristics:</strong></span>
+              <span id="detectedNasalBadge" class="detected-freq-badge hidden">
+                👃 <span data-i18n="nasalDetectedLabel">Nasal Peak Detected:</span> <strong id="detectedNasalFreqText">1,180 Hz</strong>
+              </span>
+            </div>
+            <div class="traits-buttons-grid">
+              <button type="button" class="trait-pill" id="traitNasalBtn" data-trait="nasal">
+                <span class="trait-icon">👃</span>
+                <div>
+                  <span class="trait-name" data-i18n="traitNasalName">Nasal Voice / Honkiness</span>
+                  <span class="trait-desc" data-i18n="traitNasalDesc">Auto-detects & notches your exact nasal resonance (800-1800 Hz)</span>
+                </div>
+              </button>
+
+              <button type="button" class="trait-pill" id="traitHighPitchBtn" data-trait="highPitch">
+                <span class="trait-icon">📢</span>
+                <div>
+                  <span class="trait-name" data-i18n="traitHighName">High / Thin Voice</span>
+                  <span class="trait-desc" data-i18n="traitHighDesc">Adds chest body (200-260 Hz) & softens shrill treble</span>
+                </div>
+              </button>
+
+              <button type="button" class="trait-pill" id="traitLowPitchBtn" data-trait="lowPitch">
+                <span class="trait-icon">🔊</span>
+                <div>
+                  <span class="trait-name" data-i18n="traitLowName">Deep / Boomy Voice</span>
+                  <span class="trait-desc" data-i18n="traitLowDesc">Tightens heavy bass (70 Hz) & adds subtle air articulation</span>
+                </div>
+              </button>
+
+              <button type="button" class="trait-pill" id="traitHarshBtn" data-trait="harsh">
+                <span class="trait-icon">⚡</span>
+                <div>
+                  <span class="trait-name" data-i18n="traitHarshName">Harsh / Piercing</span>
+                  <span class="trait-desc" data-i18n="traitHarshDesc">Tames fatiguing 3.5-5 kHz bite & sibilance</span>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- EQ RECOMMENDATIONS CARD -->
