@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vocal DSP Coach & EQ Assistant | Äänen reaaliaikainen analyysi & prosessointi</title>
+  <meta name="description" content="Reaaliaikainen äänen spektrianalysaattori, EQ-suosittelija, kompressori-, de-esser- ja noise gate -laskuri puheelle ja laululle suoraan selaimessa.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Yläpalkki / Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v20M17 5v14M7 9v6M22 10v4M2 11v2"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Vocal DSP Coach <span class="badge">Live AI / DSP</span></h1>
+          <p class="subtitle">Reaaliaikainen äänen analyysi, EQ-, kompressori-, de-esser- ja gate-suositukset</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <div class="mic-select-wrap">
+          <label for="micSelect">Mikrofoni:</label>
+          <select id="micSelect" title="Valitse mikrofoni">
+            <option value="">Ladataan laitteita...</option>
+          </select>
+        </div>
+
+        <button id="toggleMicBtn" class="btn btn-primary">
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+          <span id="micBtnText">Käynnistä mikrofoni</span>
+        </button>
+
+        <button id="startTestBtn" class="btn btn-accent" disabled>
+          <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/>
+          </svg>
+          <span>Tee 10s Äänitesti</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Reaaliaikainen tilanne ja visuaalinen spektri -->
+    <main class="main-content">
+      <!-- Spektrianalysaattori -osio -->
+      <section class="visualizer-card">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2>Reaaliaikainen taajuusspektri & EQ-käyrä</h2>
+            <div class="live-status">
+              <span class="status-dot" id="statusDot"></span>
+              <span id="statusText">Mikrofoni ei aktiivinen</span>
+            </div>
+          </div>
+
+          <div class="card-tools">
+            <label class="toggle-control" title="Kytkee laitteiston automaattiset suodattimet pois, jotta mikin aito sointi näkyy">
+              <input type="checkbox" id="rawAudioToggle" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-label">Raw Audio (Ei selaimen kohinanvaimennusta)</span>
+            </label>
+
+            <label class="toggle-control" title="Piirrä suositeltu EQ-vastemuoto suoraan spektrin päälle">
+              <input type="checkbox" id="showCurveToggle" checked>
+              <span class="toggle-switch"></span>
+              <span class="toggle-label">Näytä suositeltu EQ-käyrä</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Taajuuskaistavyöhykkeet (Vocal Zones) -->
+        <div class="vocal-zones-bar">
+          <span class="zone-tag zone-sub" title="Alajytinä, tärinät, pöytäkolahdukset (&lt;80 Hz)">Sub &lt;80Hz</span>
+          <span class="zone-tag zone-body" title="Puheen perustaajuudet ja rintakeho (80-250 Hz)">Keho 80-250Hz</span>
+          <span class="zone-tag zone-mud" title="Mutaisuus, huonekumina, läheisyysvaikutus (250-500 Hz)">Mutaisuus 250-500Hz</span>
+          <span class="zone-tag zone-box" title="Laatikkomaisuus, pahvisuus, huoneresonanssi (500-1kHz)">Pahvi 500-1k</span>
+          <span class="zone-tag zone-nasal" title="Nenäkkyys, torvimaisuus (1-2.5kHz)">Nenä 1-2.5k</span>
+          <span class="zone-tag zone-presence" title="Puheen artikulaatio, selkeys, purevuus (2.5-5kHz)">Selkeys 2.5-5k</span>
+          <span class="zone-tag zone-sibilance" title="Ässät, terävät konsonantit, suhinat (5-8.5kHz)">Ässät 5-8.5k</span>
+          <span class="zone-tag zone-air" title="Ilma, hengittävyys, moderni kiilto (&gt;10kHz)">Ilma &gt;10kHz</span>
+        </div>
+
+        <!-- Canvas Spektrianalysaattori -->
+        <div class="canvas-wrapper">
+          <canvas id="spectrumCanvas" width="1200" height="420"></canvas>
+          <div id="canvasOverlayNote" class="canvas-empty-state">
+            <p>Napsauta <strong>"Käynnistä mikrofoni"</strong> nähdäksesi äänesi reaaliaikaisen taajuusvasteen.</p>
+          </div>
+        </div>
+
+        <!-- Reaaliaikaiset tasomittarit (Peak, RMS, Kohinataso) -->
+        <div class="meters-bar">
+          <div class="meter-group">
+            <span class="meter-label">Huipputaso (Peak):</span>
+            <div class="meter-track">
+              <div id="peakMeterFill" class="meter-fill"></div>
+            </div>
+            <span id="peakValueText" class="meter-val">-∞ dBFS</span>
+          </div>
+
+          <div class="meter-group">
+            <span class="meter-label">Keskitaso (RMS):</span>
+            <div class="meter-track">
+              <div id="rmsMeterFill" class="meter-fill rms-fill"></div>
+            </div>
+            <span id="rmsValueText" class="meter-val">-∞ dBFS</span>
+          </div>
+
+          <div class="meter-group">
+            <span class="meter-label">Taustamelu (Floor):</span>
+            <span id="noiseFloorText" class="meter-val highlight">-∞ dBFS</span>
+          </div>
+
+          <div class="meter-group">
+            <span class="meter-label">Perussävel (F0):</span>
+            <span id="pitchValueText" class="meter-val highlight">-- Hz</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10s Äänitestin ohje & tila (Test Banner) -->
+      <section id="testCard" class="test-progress-card hidden">
+        <div class="test-info">
+          <div class="test-countdown-badge" id="testCountdownBadge">10</div>
+          <div>
+            <h3 id="testInstructionTitle">Puhu mikrofoniin normaalilla äänellä</h3>
+            <p id="testInstructionText">Lue testilause: <em>"Yksi, kaksi, kolme... Tänään säädetään mikrofonin taajuusvaste, leikataan mutaisuus ja vaimennetaan liian terävät ässät."</em></p>
+          </div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div id="testProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+      </section>
+
+      <!-- TULOKSET JA SUOSITUKSET -->
+      <section id="resultsSection" class="results-container">
+        <!-- Äänen arvio & profiilin valitsin -->
+        <div class="voice-profile-card">
+          <div class="profile-header">
+            <div>
+              <span class="section-badge">ÄÄNEN ANALYYSI JA TAVOITE</span>
+              <h2>Äänesi profiiliarvio & tavoitesoundi</h2>
+            </div>
+            <!-- Tavoitesoundin valitsin -->
+            <div class="target-picker">
+              <label for="targetToneSelect"><strong>Valitse tavoitetyyli:</strong></label>
+              <select id="targetToneSelect">
+                <option value="podcast" selected>🎙️ Selkeä & Erottuva (Podcast / YouTube / Striimi)</option>
+                <option value="radio">📻 Lämmin & Syvä (Radio / Voiceover / Broadcast Low-End)</option>
+                <option value="natural">🌿 Luonnollinen & Neutraali (Akustinen puhe)</option>
+                <option value="gaming">🎮 Läpitunkeva (Discord / Peliääni / Meluisa tila)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="profile-diagnosis" id="profileDiagnosis">
+            <div class="diagnosis-bubble">
+              <span class="bubble-icon">💡</span>
+              <div id="diagnosisContent">
+                <strong>Analyysin tilanne:</strong> Tee 10s äänitesti saadaksesi tarkan diagnoosin äänesi taajuusjakaumasta ja dynamiikasta.
+                Alla näet oletusarvoisen suosituksen, joka mukautuu reaaliaikaisen tai testatun äänesi mukaan!
+              </div>
+            </div>
+          </div>
+
+          <!-- Pikamittarit / Tunnusluvut -->
+          <div class="metrics-grid" id="metricsGrid">
+            <div class="metric-item">
+              <span class="m-title">Matalat taajuudet</span>
+              <span class="m-val" id="metricLow">Kohtalainen</span>
+              <span class="m-sub" id="metricLowSub">80-250 Hz taso</span>
+            </div>
+            <div class="metric-item">
+              <span class="m-title">Mutaisuus</span>
+              <span class="m-val" id="metricMud">Normaali</span>
+              <span class="m-sub" id="metricMudSub">300-400 Hz kumina</span>
+            </div>
+            <div class="metric-item">
+              <span class="m-title">Selkeys / Preesens</span>
+              <span class="m-val" id="metricPresence">Hyvä</span>
+              <span class="m-sub" id="metricPresenceSub">3-4 kHz purevuus</span>
+            </div>
+            <div class="metric-item">
+              <span class="m-title">Ässäterävyys (Sibilanssi)</span>
+              <span class="m-val" id="metricSibilance">Normaali</span>
+              <span class="m-sub" id="metricSibilanceSub">6-8 kHz piikit</span>
+            </div>
+            <div class="metric-item">
+              <span class="m-title">Dynamiikka-alue</span>
+              <span class="m-val" id="metricDynamicRange">~14 dB</span>
+              <span class="m-sub" id="metricDynamicSub">Peak vs RMS suhde</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- EQ-SUOSITUKSET (Helppo vs Edistynyt) -->
+        <div class="eq-recommendations-card">
+          <div class="section-top-bar">
+            <div>
+              <span class="section-badge badge-blue">TAAJUUSKORJAUS (EQ)</span>
+              <h2>Suositeltu Taajuuskorjain</h2>
+            </div>
+            
+            <!-- Moodin vaihto: Helppo vs Edistynyt -->
+            <div class="mode-tabs">
+              <button id="tabEasy" class="tab-btn active">
+                ⚡ Helppo tila (Easy Mode - 3 pistettä)
+              </button>
+              <button id="tabAdv" class="tab-btn">
+                🎛️ Edistynyt tila (Tarkka Parametric EQ)
+              </button>
+            </div>
+          </div>
+
+          <!-- HELPPO TILA (EASY MODE) -->
+          <div id="easyModeContent" class="tab-content active">
+            <p class="tab-explainer">
+              Helppo tila antaa 3 tehokkainta perussäätöä, joilla saat puheesi kuulostamaan ammattimaiselta 30 sekunnissa ilman turhaa hifistelyä.
+            </p>
+            <div class="easy-cards-grid" id="easyCardsContainer">
+              <!-- Täytetään JavaScriptillä -->
+            </div>
+          </div>
+
+          <!-- EDISTYNYT TILA (ADVANCED MODE) -->
+          <div id="advModeContent" class="tab-content">
+            <p class="tab-explainer">
+              Täydellinen parametrinen monikaistakorjain (Parametric EQ) ongelmataajuuksien kirurgiseen leikkaukseen ja soundin optimointiin (sopii FabFilter Pro-Q, ReaEQ, OBS 3-band/VST, TDR Nova, iZotope jne.).
+            </p>
+            <div class="adv-table-wrapper">
+              <table class="adv-eq-table">
+                <thead>
+                  <tr>
+                    <th>Kaista #</th>
+                    <th>Suodatin (Type)</th>
+                    <th>Taajuus (Freq)</th>
+                    <th>Vahvistus (Gain)</th>
+                    <th>Kaistanleveys (Q)</th>
+                    <th>Tarkoitus & Syy</th>
+                  </tr>
+                </thead>
+                <tbody id="advTableBody">
+                  <!-- Täytetään JavaScriptillä -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- DYNAMIIKKASUOSITUKSET (Kompressori, De-Esser, Gate) -->
+        <div class="dynamics-grid">
+          <!-- 1. KOMPRESSORI -->
+          <div class="dyn-card dyn-comp">
+            <div class="dyn-header">
+              <div class="dyn-icon comp-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 14h6m4 0h6M4 10h6m4 0h6"/>
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                </svg>
+              </div>
+              <div>
+                <h3>Kompressori (Compressor)</h3>
+                <span class="dyn-subtitle">Tasoittaa äänenvoimakkuuden erot</span>
+              </div>
+            </div>
+
+            <p class="dyn-desc" id="compDescText">
+              Mitoitettu mittaamasi dynamiikka-alueen mukaan pitämään hiljaiset kuiskaukset ja kovat huudot tasapainossa.
+            </p>
+
+            <div class="param-pills-grid" id="compParamsContainer">
+              <!-- Täytetään JavaScriptillä -->
+            </div>
+
+            <div class="dyn-footer-tip" id="compTipText">
+              <strong>Vinkki:</strong> Attack 15ms päästää puheen alun terävät konsonantit (k, p, t) läpi ennen kuin vaimennus alkaa, säilyttäen puheen luonnollisuuden.
+            </div>
+          </div>
+
+          <!-- 2. DE-ESSER -->
+          <div class="dyn-card dyn-deess">
+            <div class="dyn-header">
+              <div class="dyn-icon deess-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 6h16M4 12h16M4 18h16"/>
+                  <circle cx="16" cy="12" r="3"/>
+                </svg>
+              </div>
+              <div>
+                <h3>De-Esser (Ässävaimennin)</h3>
+                <span class="dyn-subtitle">Taltuttaa viiltävät 'S'- ja 'T'-äänet</span>
+              </div>
+            </div>
+
+            <p class="dyn-desc" id="deessDescText">
+              Vaimentaa ainoastaan korkeita teräviä sihahduksia vaikuttamatta puheen yleiseen kirkkauteen.
+            </p>
+
+            <div class="param-pills-grid" id="deessParamsContainer">
+              <!-- Täytetään JavaScriptillä -->
+            </div>
+
+            <div class="dyn-footer-tip" id="deessTipText">
+              <strong>Vinkki:</strong> Aseta De-Esser ketjussa kompressorin JÄLKEEN tai ENNEN riippuen siitä, korostaako kompressori ässiä liikaa.
+            </div>
+          </div>
+
+          <!-- 3. NOISE GATE -->
+          <div class="dyn-card dyn-gate">
+            <div class="dyn-header">
+              <div class="dyn-icon gate-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 3v18h18"/>
+                  <path d="M7 16l4-8 4 8 4-4"/>
+                </svg>
+              </div>
+              <div>
+                <h3>Kohinaportti (Noise Gate)</h3>
+                <span class="dyn-subtitle">Hiljentää taustamelun ja näppäinäänet</span>
+              </div>
+            </div>
+
+            <p class="dyn-desc" id="gateDescText">
+              Mitoitettu huoneesi pohjakohinan perusteella sulkemaan mikki puhekatkojen aikana ilman sanojen pätkimistä.
+            </p>
+
+            <div class="param-pills-grid" id="gateParamsContainer">
+              <!-- Täytetään JavaScriptillä -->
+            </div>
+
+            <div class="dyn-footer-tip" id="gateTipText">
+              <strong>Vinkki:</strong> Sulkeutumiskynnys (Close) pidetään ~5 dB matalammalla kuin Open estämään portin "hakkauksen" lauseiden lopussa.
+            </div>
+          </div>
+        </div>
+
+        <!-- A/B LIVE AUDITION (Kuuntele suosituksia reaaliajassa) -->
+        <div class="audition-card">
+          <div class="audition-content">
+            <div class="audition-text">
+              <div class="badge-row">
+                <span class="section-badge badge-green">LIVE A/B KUUNTELUTESTI</span>
+                <span class="warning-badge">🎧 Käytä kuulokkeita (kierron esto!)</span>
+              </div>
+              <h3>Kuuntele suositeltua prosessointia livenä korvissasi</h3>
+              <p>
+                Voit testata selainpohjaisilla filttereillä, miltä äänesi kuulostaa <em>raakana</em> verrattuna <em>suositeltuun EQ:hun ja kompressioon</em>!
+              </p>
+            </div>
+
+            <div class="audition-buttons">
+              <button id="toggleAuditionBtn" class="btn btn-secondary">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                </svg>
+                <span id="auditionBtnText">Käynnistä monitorointi (Kuulokkeet)</span>
+              </button>
+
+              <div class="ab-toggle-group" id="abToggleWrap" style="opacity: 0.5; pointer-events: none;">
+                <button id="btnRawSound" class="ab-btn active">RAW (Puhdas mikki)</button>
+                <button id="btnProcessedSound" class="ab-btn">PROSESSOITU (DSP Suositus)</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- KOPIOINTI & VIENTI (Export / OBS / Equalizer APO / Reaper) -->
+        <div class="export-card">
+          <div class="export-header">
+            <h3>Kopioi suositukset suoraan ohjelmaasi</h3>
+            <p>Ota arvot heti käyttöön OBS Studiossa, Equalizer APO:ssa tai missä tahansa äänieditorissa (Reaper, Audacity, Premiere Pro).</p>
+          </div>
+
+          <div class="export-btn-row">
+            <button id="copySummaryBtn" class="btn btn-outline">
+              📋 Kopioi tiivistelmä leikepöydälle
+            </button>
+            <button id="copyObsBtn" class="btn btn-outline">
+              🎥 Kopioi OBS Studio -ohjeet
+            </button>
+            <button id="copyApoBtn" class="btn btn-outline">
+              💻 Kopioi Equalizer APO -koodi
+            </button>
+          </div>
+
+          <div id="copyAlert" class="copy-alert hidden">
+            Kopioitu leikepöydälle!
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Alapalkki / Footer -->
+    <footer class="app-footer">
+      <p>Vocal DSP Coach &bull; 100% Selainpohjainen (Web Audio API) &bull; Ei lähetä ääntä mihinkään palvelimelle &bull; GitHub Pages yhteensopiva</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
