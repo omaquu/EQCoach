@@ -268,6 +268,34 @@
             </div>
           </div>
 
+          <!-- EQ Intensity Selector & Troubleshooting Sub-bar -->
+          <div class="eq-sub-bar">
+            <div class="intensity-picker">
+              <label for="eqIntensitySelect"><strong data-i18n="intensityLabel">EQ Intensity / Naturalness:</strong></label>
+              <select id="eqIntensitySelect">
+                <option value="subtle" selected data-i18n="optSubtle">🌿 Subtle / Natural (Recommended - Preserves Warmth & Body)</option>
+                <option value="moderate" data-i18n="optModerate">🎛️ Moderate (Standard Room Correction)</option>
+                <option value="full" data-i18n="optFull">🚀 Full / Heavy (Dense Noise / Strong Resonances)</option>
+              </select>
+            </div>
+
+            <button id="troubleshootToggleBtn" class="btn btn-warning-pill" title="Click if your voice sounds worse with EQ">
+              <span>⚠️</span>
+              <span data-i18n="troubleshootBtn">Sounds worse? Click here</span>
+            </button>
+          </div>
+
+          <!-- Troubleshooting Expandable Box -->
+          <div id="troubleshootBox" class="troubleshoot-box hidden">
+            <div class="troubleshoot-header">
+              <h3 data-i18n="troubleshootTitle">⚠️ Why does your voice sound worse? (Acoustic Diagnostics & Fixes)</h3>
+              <button id="closeTroubleshootBtn" class="btn-close" title="Close">&times;</button>
+            </div>
+            <div class="troubleshoot-grid" id="troubleshootGridContent">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
           <!-- EASY MODE (HPF + 3 Parametric Bands) -->
           <div id="easyModeContent" class="tab-content active">
             <p class="tab-explainer" data-i18n="easyExplainer">
@@ -343,8 +371,8 @@
                 </svg>
               </div>
               <div>
-                <h3 data-i18n="deessTitle">De-Esser</h3>
-                <span class="dyn-subtitle" data-i18n="deessSubtitle">Tames piercing 'S' and 'T' sibilants</span>
+                <h3 data-i18n="deessTitle">De-Esser (Sibilance Control)</h3>
+                <span class="dyn-subtitle" data-i18n="deessSubtitle">Tames piercing 'S' and 'T' sibilants with Range & Width</span>
               </div>
             </div>
 
@@ -353,11 +381,11 @@
             </p>
 
             <div class="param-pills-grid" id="deessParamsContainer">
-              <!-- JS Populated -->
+              <!-- JS Populated with Frequency, Threshold, Range, and Width -->
             </div>
 
             <div class="dyn-footer-tip" id="deessTipText">
-              <strong>Tip:</strong> Place the De-Esser after the compressor if compression brings out harsh sibilance too aggressively.
+              <!-- JS Populated with Range & Width explanation -->
             </div>
           </div>
 

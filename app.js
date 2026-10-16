@@ -58,7 +58,13 @@ const I18N = {
     eqTitle: "Recommended Equalizer Settings",
     tabEasy: "Easy Mode (HPF + 3 EQ Bands)",
     tabAdv: "Advanced Mode (7-Band Parametric)",
-    easyExplainer: "Easy Mode gives you a High-Pass Filter (HPF) plus 3 essential parametric EQ bands to make your voice sound professional in seconds.",
+    intensityLabel: "EQ Intensity / Naturalness:",
+    optSubtle: "🌿 Subtle / Natural (Recommended - Preserves Warmth & Body)",
+    optModerate: "🎛️ Moderate (Standard Room Correction)",
+    optFull: "🚀 Full / Heavy (Dense Noise / Strong Resonances)",
+    troubleshootBtn: "Sounds worse? Click here",
+    troubleshootTitle: "⚠️ Why does your voice sound worse? (Acoustic Diagnostics & Fixes)",
+    easyExplainer: "Easy Mode gives you a High-Pass Filter (HPF) plus 3 essential parametric EQ bands to shape your voice musically without over-processing.",
     advExplainer: "Full 7-band parametric equalizer for surgical resonance cuts and tonal sculpting (compatible with FabFilter Pro-Q, ReaEQ, OBS Studio, TDR Nova, iZotope, etc.).",
     thBand: "Band #",
     thType: "Filter Type",
@@ -68,8 +74,8 @@ const I18N = {
     thWhy: "Acoustic Purpose & Reason",
     compTitle: "Compressor",
     compSubtitle: "Smooths out volume variations",
-    deessTitle: "De-Esser",
-    deessSubtitle: "Tames piercing 'S' and 'T' sibilants",
+    deessTitle: "De-Esser (Sibilance Control)",
+    deessSubtitle: "Tames piercing 'S' and 'T' sibilants with Range & Width",
     gateTitle: "Noise Gate / Expander",
     gateSubtitle: "Silences room noise & keyboard clicks",
     auditionBadge: "LIVE A/B HEADPHONE TEST",
@@ -140,7 +146,13 @@ const I18N = {
     eqTitle: "Suositeltu Taajuuskorjain",
     tabEasy: "Helppo tila (HPF + 3 EQ-aluetta)",
     tabAdv: "Edistynyt tila (7-kaistainen Parametric)",
-    easyExplainer: "Helppo tila antaa ylipäästösuodattimen (HPF) sekä 3 tehokkainta parametrista aluetta (1, 2, 3), joilla puheesta tulee hetkessä selkeä.",
+    intensityLabel: "EQ-voimakkuus / Luonnollisuus:",
+    optSubtle: "🌿 Hienovarainen / Luonnollinen (Suositeltu - Säilyttää lämmön & kehon)",
+    optModerate: "🎛️ Kohtalainen (Normaali huonekorjaus)",
+    optFull: "🚀 Voimakas (Meluisa tila / Voimakkaat resonanssit)",
+    troubleshootBtn: "Kuulostaako huonommalta? Klikkaa tästä",
+    troubleshootTitle: "⚠️ Miksi äänesi kuulostaa huonommalta? (Akustiset syyt ja korjaukset)",
+    easyExplainer: "Helppo tila antaa ylipäästösuodattimen (HPF) sekä 3 keskeistä parametrista aluetta (1, 2, 3). 'Hienovarainen' tila varmistaa, ettei ääni koverru ontoksi.",
     advExplainer: "Täydellinen 7-alueen parametrinen monikaistakorjain ongelmataajuuksien kirurgiseen leikkaukseen ja soundin optimointiin (sopii FabFilter Pro-Q, ReaEQ, OBS Studio, TDR Nova jne.).",
     thBand: "Kaista #",
     thType: "Suodatin (Type)",
@@ -151,7 +163,7 @@ const I18N = {
     compTitle: "Kompressori (Compressor)",
     compSubtitle: "Tasoittaa äänenvoimakkuuden erot",
     deessTitle: "De-Esser (Ässävaimennin)",
-    deessSubtitle: "Taltuttaa viiltävät 'S'- ja 'T'-äänet",
+    deessSubtitle: "Taltuttaa viiltävät 'S'- ja 'T'-äänet (Range & Width)",
     gateTitle: "Kohinaportti (Noise Gate)",
     gateSubtitle: "Hiljentää taustamelun ja näppäinäänet",
     auditionBadge: "LIVE A/B KUUNTELUTESTI",
@@ -172,7 +184,6 @@ const I18N = {
   }
 };
 
-// Current language: Default to English ('en')
 let currentLang = localStorage.getItem('vocal_dsp_lang') || 'en';
 
 // --- MICROPHONE PROFILES (ACOUSTIC COMPENSATION CONTROLS) ---
@@ -181,6 +192,7 @@ const MIC_PROFILES = {
     name: "Generic Dynamic",
     hpfOffset: 0,
     mudCutOffset: 0,
+    boxCutOffset: 0,
     presenceOffset: 0,
     airOffset: 0,
     deharshOffset: 0,
@@ -189,77 +201,80 @@ const MIC_PROFILES = {
   },
   re20: {
     name: "Electro-Voice RE20",
-    // EV's patented Variable-D eliminates proximity effect boominess.
-    // Low-mids are naturally flat and tight, so heavy mud cutting is NOT needed!
-    // HPF can sit lower at 70Hz without rumble. Highs roll off smoothly above 12kHz, so small air boost helps.
-    hpfOffset: -10,
-    mudCutOffset: +1.5, // Less cut needed (e.g. -1.5 dB instead of -3.5 dB)
-    presenceOffset: +0.5,
-    airOffset: +1.5,
+    // EV's patented Variable-D eliminates proximity effect bass buildup.
+    // Low-mids are naturally flat and tight, so aggressive 300Hz and 600Hz cuts DESTROY the vocal body!
+    // HPF is gentle (70 Hz). Mud cut is minimized (-0.8 to -1.0 dB). Box cut is 0 dB.
+    // Presence boost is reduced (-1.8 dB) to prevent harsh nasal honk.
+    hpfOffset: -10, // 70 Hz
+    mudCutOffset: +2.2, // Keeps mud cut very subtle (-0.8 dB)
+    boxCutOffset: +2.0, // Eliminates box cut (0 dB)
+    presenceOffset: -1.8, // Gentle +0.7 dB presence instead of harsh +3.5 dB
+    airOffset: +0.5,
     deharshOffset: 0,
-    noteEn: "Electro-Voice RE20 has patented Variable-D technology that eliminates proximity effect. Low-mids are naturally clean, so heavy 300Hz cuts are avoided. Retains rich, broadcast authority.",
-    noteFi: "Electro-Voice RE20 sisältää Variable-D -teknologian, joka poistaa läheisyysvaikutuksen kumun. Alakeskialue on luonnostaan puhdas, joten 300 Hz mutaleikkausta pienennetään."
+    noteEn: "Electro-Voice RE20 features Variable-D technology (virtually zero proximity bass buildup). Over-EQing (scooping 300-600Hz) hollows out the voice and ruins its legendary broadcast warmth. Subtle, gentle settings are applied to keep your voice rich and full.",
+    noteFi: "Electro-Voice RE20 sisältää Variable-D -teknologian, joka poistaa läheisyyskuminan. Liiallinen taajuusleikkaus (300-600 Hz koverrus) tekee RE20-äänestä onton, ohuen ja purkkimaisen! Suositus käyttää hienovaraisia arvoja, jotta äänesi säilyttää rintaäänen ja täyteläisyyden."
   },
   sm7b: {
     name: "Shure SM7B",
     // Famous for thick, warm low-mids and dark rolled-off top end.
-    // Benefits from high-mid presence boost (3.5kHz) and healthy air shelf (10-12kHz) to sound open.
     hpfOffset: 0,
-    mudCutOffset: -0.5, // Needs standard to slightly firmer mud cleaning
-    presenceOffset: +1.5, // Lift the vocal presence
-    airOffset: +3.0, // SM7B needs an air shelf to open up
+    mudCutOffset: -0.5,
+    boxCutOffset: 0,
+    presenceOffset: +1.2,
+    airOffset: +2.5,
     deharshOffset: +0.5,
-    noteEn: "Shure SM7B is warm and low-mid heavy with a rolled-off top end. It benefits from a +1.5dB presence boost at 3.5kHz and a +3dB Air Shelf to open up vocal sparkle.",
-    noteFi: "Shure SM7B on tunnetusti lämmin ja yläpäästään tumma. Se hyötyy +1.5 dB preesens-nostosta (3.5 kHz) ja +3 dB ilmahyllystä (10-12 kHz) avoimen soundin saavuttamiseksi."
+    noteEn: "Shure SM7B is warm and low-mid heavy with a rolled-off top end. It benefits from a gentle presence boost at 3.5kHz and an Air Shelf (11kHz) to sound modern and open.",
+    noteFi: "Shure SM7B on tunnetusti lämmin ja yläpäästään tumma. Se hyötyy maltillisesta preesens-nostosta (3.5 kHz) ja ilmahyllystä (11 kHz) avoimen soundin saavuttamiseksi."
   },
   podmic: {
     name: "Røde PodMic / Procaster",
-    // Aggressive presence bump around 7-8kHz that can produce harsh sibilance.
     hpfOffset: +5,
     mudCutOffset: -0.5,
+    boxCutOffset: 0,
     presenceOffset: -0.5,
     airOffset: 0,
-    deharshOffset: -2.5, // Tame the harsh 7kHz peak!
+    deharshOffset: -2.5,
     noteEn: "Røde PodMic has an aggressive 7-8kHz presence bump. Compensation applies a de-harsh dip around 7kHz and activates tighter de-essing.",
     noteFi: "Røde PodMicissä on voimakas 7-8 kHz preesens-piikki, joka voi tehdä ässistä viiltäviä. Korjaus lisää pienen pehmennysleikkauksen 7 kHz kohdalle."
   },
   sm58: {
     name: "Shure SM58 / Beta 58A",
-    // Strong proximity effect bass buildup when speaking close to the ball grill.
     hpfOffset: +5,
     mudCutOffset: -1.5,
+    boxCutOffset: -0.5,
     presenceOffset: +0.5,
-    airOffset: +2.0,
+    airOffset: +1.5,
     deharshOffset: 0,
     noteEn: "Shure SM58 exhibits strong proximity bass buildup when close to the mouth. Mud cut is slightly increased to preserve vocal clarity.",
     noteFi: "Shure SM58 kerää voimakasta läheisyyskuminaa lähellä puhuttaessa. 300 Hz mutaleikkausta tehostetaan selkeyden säilyttämiseksi."
   },
   at2020: {
     name: "Audio-Technica AT2020",
-    // Budget studio condenser: bright top end, sensitive to room reflections and desk rumble.
     hpfOffset: +10,
     mudCutOffset: -1.0,
+    boxCutOffset: 0,
     presenceOffset: 0,
-    airOffset: -1.0, // Don't overboost already bright condenser highs
+    airOffset: -1.0,
     deharshOffset: -1.5,
     noteEn: "AT2020 is a bright condenser sensitive to room reflections and desk rumble. Higher HPF and high-frequency smoothing are applied.",
     noteFi: "AT2020 on herkkä kondensaattorimikrofoni kirkkaalla yläpäällä. Suositellaan napakampaa HPF-leikkausta ja maltillisempaa yläpään korostusta."
   },
   blue_yeti: {
     name: "Blue Yeti (USB Condenser)",
-    // Heavy desk vibrations, room reverberation, boomy desk reflections.
-    hpfOffset: +15, // Raise HPF to 95Hz to cut desk thumps
-    mudCutOffset: -2.0, // Clean up desk reflection mud at 300-360Hz
-    presenceOffset: +1.0,
+    hpfOffset: +15,
+    mudCutOffset: -1.8,
+    boxCutOffset: -1.0,
+    presenceOffset: +0.5,
     airOffset: 0,
     deharshOffset: -1.0,
-    noteEn: "Blue Yeti picks up desk vibrations and surface reflections. A higher HPF (95Hz) and firmer low-mid cut (320Hz) clean up table coupling.",
+    noteEn: "Blue Yeti picks up desk vibrations and surface reflections. A higher HPF (95Hz) and low-mid cut (320Hz) clean up table coupling.",
     noteFi: "Blue Yeti pöydällä kerää tärinöitä ja pöytäheijastuksia. Korkeampi 95 Hz HPF ja napakka mutaleikkaus puhdistavat pöytäkumun."
   },
   generic_condenser: {
     name: "Generic Studio Condenser",
     hpfOffset: +5,
     mudCutOffset: -0.5,
+    boxCutOffset: 0,
     presenceOffset: 0,
     airOffset: 0,
     deharshOffset: -0.5,
@@ -275,7 +290,7 @@ let sourceNode = null;
 let analyserNode = null;
 let auditionGainNode = null;
 let isAuditionMonitoring = false;
-let auditionMode = 'raw'; // 'raw' or 'processed'
+let auditionMode = 'raw';
 
 // Audition DSP Nodes
 let auditionHPF = null;
@@ -339,6 +354,12 @@ const howItWorksBtn = document.getElementById('howItWorksBtn');
 const howItWorksModal = document.getElementById('howItWorksModal');
 const closeExplainerBtn = document.getElementById('closeExplainerBtn');
 const explainerBodyContent = document.getElementById('explainerBodyContent');
+
+const eqIntensitySelect = document.getElementById('eqIntensitySelect');
+const troubleshootToggleBtn = document.getElementById('troubleshootToggleBtn');
+const troubleshootBox = document.getElementById('troubleshootBox');
+const closeTroubleshootBtn = document.getElementById('closeTroubleshootBtn');
+const troubleshootGridContent = document.getElementById('troubleshootGridContent');
 
 const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
@@ -409,7 +430,6 @@ const BANDS = {
   air: [9000, 20000]
 };
 
-// Canvas Frequency Bounds (Logarithmic)
 const MIN_FREQ = 20;
 const MAX_FREQ = 20000;
 const MIN_DB = -90;
@@ -423,7 +443,6 @@ window.addEventListener('DOMContentLoaded', () => {
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
   
-  // Initial baseline recommendation
   recalculateRecommendations();
 });
 
@@ -446,7 +465,6 @@ function applyLanguage(lang) {
   const t = I18N[lang];
   document.documentElement.lang = lang;
 
-  // Update language button state
   if (lang === 'en') {
     flagIcon.textContent = '🇫🇮';
     langText.textContent = 'Suomi';
@@ -455,7 +473,6 @@ function applyLanguage(lang) {
     langText.textContent = 'In English';
   }
 
-  // Update all data-i18n elements
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (t[key]) {
@@ -463,13 +480,12 @@ function applyLanguage(lang) {
     }
   });
 
-  // Dynamic buttons
   micBtnText.textContent = isMicActive ? t.stopMic : t.startMic;
   statusText.textContent = isMicActive ? t.statusActive : t.statusInactive;
   auditionBtnText.textContent = isAuditionMonitoring ? t.stopMonitoring : t.startMonitoring;
 
-  // Update Explainer Content
   renderExplainerContent(lang);
+  renderTroubleshootContent(lang);
 }
 
 function renderExplainerContent(lang) {
@@ -480,16 +496,16 @@ function renderExplainerContent(lang) {
         <p>Sovellus lukee mikrofonisi signaalia 4096 pisteen FFT-tarkkuudella. Puheen aikana se mittaa 8 kriittistä äänivyöhykettä: matalan jyminän (&lt;80Hz), rintakehon (80-240Hz), huonemutaisuuden (240-480Hz), tynnyrisoinnin (480-1k) ja ässäpiikit (6-8.5k).</p>
       </div>
       <div class="explainer-col">
-        <h4><span>🎙️</span> 2. Mikrofonin korjausprofiili</h4>
+        <h4><span>🎙️</span> 2. Mikrofonin korjausprofiili (RE20 vs muut)</h4>
         <p>Eri mikrofoneilla on tunnetut akustiset ominaisuudet:</p>
         <ul>
-          <li><strong>Electro-Voice RE20:</strong> Variable-D -rakenteen ansiosta mikki ei kärsi lähes lainkaan läheisyyskuminasta (proximity effect). Siksi 300 Hz mutaleikkaus pidetään pienenä säilyttäen syvän läsnäolon!</li>
-          <li><strong>Shure SM7B:</strong> Luonnostaan tumma ja pyöreä yläpää. Vaatii selkeän +1.5–2.5 dB preesens-noston (3.5 kHz) ja +3 dB ilmahyllyn (11 kHz).</li>
+          <li><strong>Electro-Voice RE20:</strong> Variable-D -rakenteen ansiosta mikki ei kärsi läheisyyskuminasta. Siksi RE20:lle ei tule tehdä raskasta 300-600 Hz leikkausta, jottei ääni koverru ontoksi.</li>
+          <li><strong>Shure SM7B:</strong> Luonnostaan tumma ja pyöreä yläpää. Vaatii maltillisen preesens-noston (3.5 kHz) ja ilmahyllyn (11 kHz).</li>
         </ul>
       </div>
       <div class="explainer-col">
-        <h4><span>🎯</span> 3. Tavoitesoundi & Akustiikka</h4>
-        <p>Laskuri vertaa mikrofonisi todellista sointia ammattimaiseen puheäänen referenssikäyrään (broadcast voice tilt). Valittu tavoite (Podcast, Radio, Luonnollinen tai Peliääni) muokkaa käyrää: Podcast korostaa 3-4 kHz artikulaatiota, kun taas Radio jättää miellyttävän matalan rintaäänen.</p>
+        <h4><span>🎯</span> 3. Kultainen sääntö: "Less is more"</h4>
+        <p>Paras puhesoundi syntyy hienovaraisilla korjauksilla. Jos EQ on liian voimakas (-4 dB leikkaukset), puhe kuulostaa keinotekoiselta ja ohuelta. Valitse EQ-voimakkuudeksi <strong>Hienovarainen (50%)</strong> luonnollisen lämmön säilyttämiseksi!</p>
       </div>
     `;
   } else {
@@ -499,16 +515,60 @@ function renderExplainerContent(lang) {
         <p>The app continuously inspects your microphone using a high-resolution 4096-point FFT. During speech, it measures energy across 8 key vocal zones: sub-bass rumble (<80Hz), chest resonance (80-240Hz), room mud (240-480Hz), cardboard boxiness (480-1k), and sibilance spikes (6-8.5k).</p>
       </div>
       <div class="explainer-col">
-        <h4><span>🎙️</span> 2. Microphone Acoustic Contours</h4>
+        <h4><span>🎙️</span> 2. Microphone Acoustic Contours (RE20 vs Others)</h4>
         <p>Different microphones have distinct acoustic signatures:</p>
         <ul>
-          <li><strong>Electro-Voice RE20:</strong> Features patented Variable-D ports along the body that eliminate proximity effect bass buildup. Its low-mids are naturally flat, so harsh 300Hz cuts are avoided to preserve broadcast authority!</li>
-          <li><strong>Shure SM7B:</strong> Renowned for warm, thick low-mids and rolled-off highs. It benefits from a +1.5dB presence boost at 3.5kHz and a +3dB Air Shelf (11kHz) to sound modern and open.</li>
+          <li><strong>Electro-Voice RE20:</strong> Features Variable-D ports eliminating proximity effect. Its low-mids are naturally flat, so heavy 300Hz-600Hz scooping must be avoided to keep vocal body!</li>
+          <li><strong>Shure SM7B:</strong> Renowned for warm, thick low-mids and rolled-off highs. It benefits from a gentle presence boost at 3.5kHz and an Air Shelf (11kHz).</li>
         </ul>
       </div>
       <div class="explainer-col">
-        <h4><span>🎯</span> 3. Target Vocal Contour & Room</h4>
-        <p>The engine compares your measured spectrum against an ideal broadcast vocal contour. Your chosen target (Podcast, Broadcast Radio, Natural, or Gaming) shapes the final curve: Podcast elevates 3-4kHz consonant diction, while Broadcast Radio preserves warm 120-180Hz chest fullness.</p>
+        <h4><span>🎯</span> 3. The Golden Rule: "Less is More"</h4>
+        <p>Over-EQing ruins great microphones. Heavy cuts (-4 dB) make voices sound thin and nasal. Use the <strong>Subtle / Natural (50%)</strong> intensity setting to preserve natural vocal warmth while gently cleaning up room acoustic flaws.</p>
+      </div>
+    `;
+  }
+}
+
+function renderTroubleshootContent(lang) {
+  if (lang === 'fi') {
+    troubleshootGridContent.innerHTML = `
+      <div class="troubleshoot-item">
+        <h4>1. Ääni kuulostaa ohuelta, ontolta tai peltipurkkimaiselta?</h4>
+        <p><strong>Syy:</strong> Alakeskialuetta (250–600 Hz) on leikattu liikaa. Varsinkin <strong>Electro-Voice RE20</strong> -mikrofonilla, jossa Variable-D poistaa läheisyyskuminan valmiiksi, 300 Hz ja 600 Hz lisäleikkaukset kovertavat puheesta kaiken rintakehon ja lämmön pois!</p>
+        <div class="troubleshoot-fix">✅ <strong>Korjaus:</strong> Vaihda EQ-voimakkuudeksi <em>"Hienovarainen / Luonnollinen"</em> tai nollaa EQ 1 (Muta) ja EQ 2 (Pahvi) arvoon 0 dB. Pidä HPF 70 Hz:ssä.</div>
+      </div>
+
+      <div class="troubleshoot-item">
+        <h4>2. Ääni kuulostaa pistävältä, kireältä tai nenäkkäältä?</h4>
+        <p><strong>Syy:</strong> Artikulaatiota / preesensiä (3–4 kHz) on nostettu liikaa (+2.5...3.5 dB). Korva väsyy nopeasti, jos tämä alue on liian voimakas, ja ääni alkaa kuulostaa puhelinmaiselta.</p>
+        <div class="troubleshoot-fix">✅ <strong>Korjaus:</strong> Laske EQ 3 (Selkeys) vahvistus arvoon +0.5...1.0 dB tai jätä 0 dB:iin. RE20:ssä on luonnostaan erinomainen artikulaatio ilman keinotekoista nostoa.</div>
+      </div>
+
+      <div class="troubleshoot-item">
+        <h4>3. Ässät sammaltavat tai ääni kuulostaa tunkkaiselta?</h4>
+        <p><strong>Syy:</strong> De-Esserin <strong>Range</strong> (vaimennusvara) on liian syvä tai kynnystaso leikkaa liikaa normaalia puhetta.</p>
+        <div class="troubleshoot-fix">✅ <strong>Korjaus:</strong> Aseta De-Esserin Range arvoon -4 dB tai -5 dB, ja varmista että Width (Q) on noin 2.0 (Bell). Näin vaimennus koskee vain terävintä suhahdusta.</div>
+      </div>
+    `;
+  } else {
+    troubleshootGridContent.innerHTML = `
+      <div class="troubleshoot-item">
+        <h4>1. Voice sounds thin, hollow, or like a tin can?</h4>
+        <p><strong>Cause:</strong> Over-cutting low-mids (250–600 Hz). Especially with an <strong>Electro-Voice RE20</strong>, which already has Variable-D (flat low-mids), scooping 320 Hz and 620 Hz destroys its natural broadcast chest resonance.</p>
+        <div class="troubleshoot-fix">✅ <strong>Fix:</strong> Switch EQ Intensity to <em>"Subtle / Natural"</em>, or set Mud Cut and Box Cut to 0 dB or -0.8 dB. Keep HPF at 70 Hz.</div>
+      </div>
+
+      <div class="troubleshoot-item">
+        <h4>2. Voice sounds harsh, sharp, or nasal?</h4>
+        <p><strong>Cause:</strong> Over-boosting presence (3–4 kHz). Boosting more than +1.5 dB on speech creates ear fatigue, harsh sibilance, and a telephone-like honk.</p>
+        <div class="troubleshoot-fix">✅ <strong>Fix:</strong> Lower Presence (EQ 3) to +0.5 dB or 0 dB. The RE20 already has natural diction and doesn't need artificial hyping.</div>
+      </div>
+
+      <div class="troubleshoot-item">
+        <h4>3. Lisping on 'S' sounds or muffled top end?</h4>
+        <p><strong>Cause:</strong> De-Esser <strong>Range</strong> is clamped too deep (past -8 dB) or threshold is too low.</p>
+        <div class="troubleshoot-fix">✅ <strong>Fix:</strong> Set De-Esser Range to -4 dB or -5 dB, and keep Width (Q) at 2.0 (Bell) so only the harsh whistle is ducked without lisping.</div>
       </div>
     `;
   }
@@ -552,6 +612,10 @@ function setupEventListeners() {
     recalculateRecommendations();
   });
 
+  eqIntensitySelect.addEventListener('change', () => {
+    recalculateRecommendations();
+  });
+
   howItWorksBtn.addEventListener('click', () => {
     howItWorksModal.classList.toggle('hidden');
     if (!howItWorksModal.classList.contains('hidden')) {
@@ -561,6 +625,17 @@ function setupEventListeners() {
 
   closeExplainerBtn.addEventListener('click', () => {
     howItWorksModal.classList.add('hidden');
+  });
+
+  troubleshootToggleBtn.addEventListener('click', () => {
+    troubleshootBox.classList.toggle('hidden');
+    if (!troubleshootBox.classList.contains('hidden')) {
+      troubleshootBox.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+
+  closeTroubleshootBtn.addEventListener('click', () => {
+    troubleshootBox.classList.add('hidden');
   });
 
   rawAudioToggle.addEventListener('change', () => {
@@ -636,12 +711,10 @@ async function startMicrophone() {
 
     mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
 
-    // Refresh devices list with proper labels
     initDeviceList();
 
     sourceNode = audioCtx.createMediaStreamSource(mediaStream);
     
-    // Analyser setup (High FFT size 4096 gives ~11.7 Hz bin resolution)
     analyserNode = audioCtx.createAnalyser();
     analyserNode.fftSize = 4096;
     analyserNode.minDecibels = -100;
@@ -651,7 +724,6 @@ async function startMicrophone() {
     freqData = new Uint8Array(analyserNode.frequencyBinCount);
     timeData = new Float32Array(analyserNode.fftSize);
 
-    // Setup Audition DSP Chain
     setupAuditionChain();
 
     sourceNode.connect(analyserNode);
@@ -887,7 +959,6 @@ function startVoiceTest() {
     const progressPercent = ((10 - testSecondsLeft) / 10) * 100;
     testProgressBar.style.width = `${progressPercent}%`;
 
-    // Phase 2: Silence detection (last 3 seconds)
     if (testSecondsLeft === 3) {
       testCountdownBadge.style.background = '#0ea5e9';
       testInstructionTitle.textContent = I18N[currentLang].testSilenceTitle;
@@ -995,12 +1066,21 @@ function processTestResults() {
   document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
 }
 
-// --- RECOMMENDATION ENGINE (WITH MIC MODEL PROFILES & 4 EASY CARDS) ---
+// --- RECOMMENDATION ENGINE (WITH INTENSITY FACTOR & ENHANCED DE-ESSER) ---
 function recalculateRecommendations() {
   const target = targetToneSelect.value;
   const b = benchmarkData;
   const micModelKey = micModelSelect.value || 'generic_dynamic';
   const micProfile = MIC_PROFILES[micModelKey] || MIC_PROFILES.generic_dynamic;
+
+  // EQ Intensity Factor:
+  // 'subtle' = 0.5x (Gentle, musical, preserves warmth, avoids thin/hollow sound)
+  // 'moderate' = 0.75x
+  // 'full' = 1.0x
+  const intensityMode = eqIntensitySelect ? eqIntensitySelect.value : 'subtle';
+  let intensityFactor = 0.5;
+  if (intensityMode === 'moderate') intensityFactor = 0.75;
+  if (intensityMode === 'full') intensityFactor = 1.0;
 
   // Analysis Ratios
   const subExcess = b.bandEnergy.sub - b.bandEnergy.body;
@@ -1027,8 +1107,8 @@ function recalculateRecommendations() {
       }
 
       if (mudExcess > 2.0) {
-        diagHtml += `Huone- tai läheisyyskuminaa (280-350 Hz) on runsaasti. `;
-        mudDiag = 'Korostunut (kuminaa)';
+        diagHtml += `Huone- tai läheisyyskuminaa (280-350 Hz) on havaittavissa. `;
+        mudDiag = 'Korostunut';
       } else {
         mudDiag = 'Tasapainoinen';
       }
@@ -1052,7 +1132,7 @@ function recalculateRecommendations() {
 
       if (mudExcess > 2.0) {
         diagHtml += `Elevated room/proximity mud (280-350 Hz). `;
-        mudDiag = 'Boomy mud';
+        mudDiag = 'Boomy';
       } else {
         mudDiag = 'Balanced';
       }
@@ -1068,13 +1148,13 @@ function recalculateRecommendations() {
     }
   } else {
     if (isFi) {
-      diagHtml += `<strong>Oletusprofiili (${micProfile.name}):</strong> ${micProfile.noteFi} Tee 10s äänitesti saadaksesi juuri sinun ääneesi mukautuvat tarkat arvot.`;
+      diagHtml += `<strong>Oletusprofiili (${micProfile.name}):</strong> ${micProfile.noteFi} Käytetään ${intensityMode === 'subtle' ? 'hienovaraista (50%)' : 'kohtalaista'} korjausta luonnollisen soinnin takaamiseksi.`;
       subDiag = 'Normaali';
       mudDiag = 'Normaali';
       presDiag = 'Kohtalainen';
       sibDiag = 'Normaali';
     } else {
-      diagHtml += `<strong>Default Profile (${micProfile.name}):</strong> ${micProfile.noteEn} Run the 10s Voice Test to calibrate exact acoustic frequencies for your room and voice.`;
+      diagHtml += `<strong>Default Profile (${micProfile.name}):</strong> ${micProfile.noteEn} Operating in ${intensityMode === 'subtle' ? 'subtle (50%)' : 'moderate'} intensity to preserve natural vocal body.`;
       subDiag = 'Normal';
       mudDiag = 'Normal';
       presDiag = 'Moderate';
@@ -1090,63 +1170,69 @@ function recalculateRecommendations() {
   metricDynamicRange.textContent = `${Math.round(b.crestFactor)} dB`;
   diagnosisContent.innerHTML = diagHtml;
 
-  // --- COMPUTE BASELINE FREQUENCIES & GAINS ---
-  let hpfFreq = 80 + micProfile.hpfOffset;
+  // --- BASELINE FILTER COMPUTATION ---
+  let hpfFreq = 75 + micProfile.hpfOffset;
   let mudCutFreq = 320;
-  let mudCutGain = -3.0 + micProfile.mudCutOffset;
+  let mudCutGainRaw = -2.5 + micProfile.mudCutOffset;
   let mudCutQ = 1.6;
 
   let boxCutFreq = 620;
-  let boxCutGain = -2.0;
+  let boxCutGainRaw = (micModelKey === 're20') ? 0.0 : (-1.5 + (micProfile.boxCutOffset || 0));
   let boxCutQ = 1.9;
 
   let presBoostFreq = 3400;
-  let presBoostGain = 2.5 + micProfile.presenceOffset;
+  let presBoostGainRaw = 2.0 + micProfile.presenceOffset;
   let presBoostQ = 1.3;
 
-  let deharshFreq = 6800;
-  let deharshGain = -2.0 + (micProfile.deharshOffset || 0);
+  let deharshFreq = 6500;
+  let deharshGainRaw = -1.5 + (micProfile.deharshOffset || 0);
   let deharshQ = 2.5;
 
   let airShelfFreq = 11000;
-  let airShelfGain = 2.0 + micProfile.airOffset;
+  let airShelfGainRaw = 1.5 + micProfile.airOffset;
 
   let lowWarmthFreq = Math.max(100, Math.min(180, b.fundamentalFreq * 1.1));
-  let lowWarmthGain = 0.0;
+  let lowWarmthGainRaw = 0.0;
 
-  // Refine by Voice Test
+  // Fine-tune if voice test was run
   if (b.tested) {
-    if (subExcess > -10) hpfFreq = Math.max(hpfFreq, 90);
-    if (mudExcess > 3.0) mudCutGain -= 1.0;
-    if (mudExcess < 0.0) mudCutGain += 1.0;
-    if (sibilanceHarshness > -3.0) deharshGain -= 1.5;
+    if (subExcess > -10) hpfFreq = Math.max(hpfFreq, 85);
+    if (mudExcess > 3.0 && micModelKey !== 're20') mudCutGainRaw -= 1.0;
+    if (sibilanceHarshness > -3.0) deharshGainRaw -= 1.0;
   }
 
   // Modulate according to Target Profile
   if (target === 'podcast') {
-    hpfFreq = Math.max(80, hpfFreq);
-    mudCutGain -= 0.5;
-    presBoostGain += 0.5;
-    airShelfGain += 0.5;
+    hpfFreq = Math.max(75, hpfFreq);
+    mudCutGainRaw -= 0.5;
+    presBoostGainRaw += 0.5;
+    airShelfGainRaw += 0.5;
   } else if (target === 'radio') {
-    hpfFreq = Math.min(75, hpfFreq);
-    lowWarmthGain = 2.0;
-    mudCutGain += 1.0; // Keep more chest warmth
-    presBoostGain = 1.5;
+    hpfFreq = Math.min(70, hpfFreq);
+    lowWarmthGainRaw = 1.5;
+    mudCutGainRaw += 0.8;
+    presBoostGainRaw = Math.max(0.5, presBoostGainRaw - 0.5);
     presBoostFreq = 3000;
-    airShelfGain = 0.5;
+    airShelfGainRaw = 0.5;
   } else if (target === 'natural') {
-    mudCutGain = -1.5;
-    boxCutGain = -1.0;
-    presBoostGain = 1.0;
-    airShelfGain = 1.0;
+    mudCutGainRaw = Math.min(0, mudCutGainRaw + 1.0);
+    boxCutGainRaw = 0.0;
+    presBoostGainRaw = 0.5;
+    airShelfGainRaw = 0.5;
   } else if (target === 'gaming') {
-    hpfFreq = Math.max(95, hpfFreq);
-    mudCutGain -= 1.5;
-    boxCutGain -= 1.0;
-    presBoostGain += 1.5;
+    hpfFreq = Math.max(90, hpfFreq);
+    mudCutGainRaw -= 1.0;
+    presBoostGainRaw += 1.0;
     presBoostFreq = 3200;
   }
+
+  // Scale gains with intensityFactor (Crucial: prevents over-EQing and hollow sound!)
+  const mudCutGain = Number((mudCutGainRaw * intensityFactor).toFixed(1));
+  const boxCutGain = Number((boxCutGainRaw * intensityFactor).toFixed(1));
+  const presBoostGain = Number((presBoostGainRaw * intensityFactor).toFixed(1));
+  const deharshGain = Number((deharshGainRaw * intensityFactor).toFixed(1));
+  const airShelfGain = Number((airShelfGainRaw * intensityFactor).toFixed(1));
+  const lowWarmthGain = Number((lowWarmthGainRaw * intensityFactor).toFixed(1));
 
   // --- EASY MODE CARDS: EXACTLY HPF + 1, 2, 3 EQ BANDS ---
   const easyCards = [
@@ -1159,20 +1245,24 @@ function recalculateRecommendations() {
       gainClass: 'pass',
       q: '18 dB/oct',
       why: isFi 
-        ? 'Leikkaa pois mikrofonin käsittelyäänet, pöytätärinät ja alajyminät (<80 Hz), joita puheessa ei tarvita.'
-        : 'Cuts out desk rumbles, handling thumps, and sub-bass vibration (<80 Hz) not needed in speech.'
+        ? 'Leikkaa pois pöytätärinät ja alajyminät (<80 Hz) hävittämättä luonnollista puheääntä.'
+        : 'Removes desk rumbles and handling thumps (<80 Hz) without thinning out speech warmth.'
     },
     {
       step: 'EQ 1',
-      title: isFi ? 'Mutaisuuden leikkaus (Mud Cut)' : 'Mud & Room Boom Cut (Low-Mid)',
+      title: isFi ? 'Mutaisuuden siivous (Mud Cut)' : 'Mud & Room Boom Cut (Low-Mid)',
       type: 'Bell / Peaking',
       freq: `${Math.round(mudCutFreq)} Hz`,
       gain: `${mudCutGain.toFixed(1)} dB`,
-      gainClass: 'cut',
+      gainClass: mudCutGain === 0 ? 'neutral' : 'cut',
       q: mudCutQ.toFixed(1),
       why: isFi 
-        ? 'Poistaa tunkkaisen "pahvilaatikkosoundin" ja huonekaiun kumun, jotta ääni erottuu selkeästi.'
-        : 'Removes muddy chest boominess and small-room resonances, making your voice sound immediately clearer.'
+        ? (micModelKey === 're20' 
+            ? 'RE20 ei kerrytä läheisyyskuminaa. Pidetään leikkaus hyvin pienenä (-0.5...-1 dB), jotta rintaääni ei katoa!' 
+            : 'Siivoaa tunkkaista huonekaiun kumua ja läheisyysvaikutusta säilyttäen puheen kehon.')
+        : (micModelKey === 're20'
+            ? 'RE20 has Variable-D (no proximity boom). Kept minimal (-0.5 to -1 dB) so voice remains full and rich.'
+            : 'Gently cleans up muddy room reflections and proximity boom without hollowing out speech.')
     },
     {
       step: 'EQ 2',
@@ -1180,23 +1270,27 @@ function recalculateRecommendations() {
       type: 'Bell / Peaking',
       freq: `${Math.round(boxCutFreq)} Hz`,
       gain: `${boxCutGain.toFixed(1)} dB`,
-      gainClass: 'cut',
+      gainClass: boxCutGain === 0 ? 'neutral' : 'cut',
       q: boxCutQ.toFixed(1),
       why: isFi
-        ? 'Siivoaa onttoa tynnyrimäistä sointia 600 Hz alueelta, jolloin ääni tuntuu läheisemmältä.'
-        : 'Eliminates hollow, plastic, or cupped-hands resonance around 600 Hz for an intimate vocal sound.'
+        ? (boxCutGain === 0 
+            ? 'Pahvisuuden leikkaus jätetty neutraaliksi (0 dB), jotta äänesi ei muutu ohueksi.' 
+            : 'Puhdistaa tynnyrimäistä onttoa sointia 600 Hz alueelta.')
+        : (boxCutGain === 0
+            ? 'Boxiness cut left flat (0 dB) to prevent thinning out your natural voice.'
+            : 'Trims hollow, plastic cardboard reflections around 620 Hz.')
     },
     {
       step: 'EQ 3',
-      title: isFi ? 'Selkeyden ja artikulaation nosto' : 'Clarity & Vocal Presence Boost',
+      title: isFi ? 'Selkeys ja artikulaatio (Presence)' : 'Clarity & Vocal Presence Boost',
       type: 'Bell / Peaking',
       freq: `${(presBoostFreq / 1000).toFixed(1)} kHz`,
-      gain: `+${presBoostGain.toFixed(1)} dB`,
-      gainClass: 'boost',
+      gain: presBoostGain > 0 ? `+${presBoostGain.toFixed(1)} dB` : `${presBoostGain.toFixed(1)} dB`,
+      gainClass: presBoostGain > 0 ? 'boost' : 'neutral',
       q: presBoostQ.toFixed(1),
       why: isFi
-        ? 'Tuo konsonantit (k, p, t, s) ja puheen artikulaation esiin ilman yleisvoimakkuuden nostamista.'
-        : 'Elevates speech diction and consonant intelligibility (k, p, t, d) so words cut through easily.'
+        ? 'Tuo konsonanttien (k, p, t, s) artikulaation esiin maltillisesti ilman kireää metallista sointia.'
+        : 'Elevates consonant diction and speech intelligibility smoothly without causing ear fatigue.'
     }
   ];
 
@@ -1204,40 +1298,41 @@ function recalculateRecommendations() {
   const advEq = [
     { band: 1, type: 'High-Pass (HPF)', freq: Math.round(hpfFreq), gain: 0, q: 0.71, gainDisplay: '18 dB/oct', gainClass: 'pass', why: isFi ? 'Eliminoi pöydän tärinät, tuulettimet ja plosiivit.' : 'Eliminates desk thumps, AC hum, and plosive wind blasts.' },
     { band: 2, type: 'Low Bell / Warmth', freq: Math.round(lowWarmthFreq), gain: lowWarmthGain, q: 1.4, gainDisplay: lowWarmthGain > 0 ? `+${lowWarmthGain.toFixed(1)} dB` : '0 dB', gainClass: lowWarmthGain > 0 ? 'boost' : 'pass', why: isFi ? 'Rintaäänen ja perussävelen miellyttävä täyteläisyys.' : 'Richness and body around fundamental voice frequencies.' },
-    { band: 3, type: 'Bell (Mud)', freq: Math.round(mudCutFreq), gain: mudCutGain, q: mudCutQ, gainDisplay: `${mudCutGain.toFixed(1)} dB`, gainClass: 'cut', why: isFi ? 'Puhdistaa huoneheijastukset ja puuromaisen 300 Hz kumun.' : 'Cleans up boomy room acoustic reflections and proximity mud.' },
-    { band: 4, type: 'Bell (Boxy)', freq: Math.round(boxCutFreq), gain: boxCutGain, q: boxCutQ, gainDisplay: `${boxCutGain.toFixed(1)} dB`, gainClass: 'cut', why: isFi ? 'Poistaa onttoa, muovista tai tynnyrimäistä sointia.' : 'Cuts hollow, cardboard resonances.' },
-    { band: 5, type: 'Bell (Presence)', freq: Math.round(presBoostFreq), gain: presBoostGain, q: presBoostQ, gainDisplay: `+${presBoostGain.toFixed(1)} dB`, gainClass: 'boost', why: isFi ? 'Parantaa puheen ymmärrettävyyttä ja modernia läsnäoloa.' : 'Boosts speech intelligibility and crisp consonant clarity.' },
-    { band: 6, type: 'Bell (De-Harsh)', freq: Math.round(deharshFreq), gain: deharshGain, q: deharshQ, gainDisplay: `${deharshGain.toFixed(1)} dB`, gainClass: 'cut', why: isFi ? 'Pehmentää teräviä mikrofoniheijastuksia ja ässiä.' : 'Smooths piercing microphone resonance peaks & harsh sibilance.' },
+    { band: 3, type: 'Bell (Mud)', freq: Math.round(mudCutFreq), gain: mudCutGain, q: mudCutQ, gainDisplay: `${mudCutGain.toFixed(1)} dB`, gainClass: mudCutGain === 0 ? 'pass' : 'cut', why: isFi ? 'Puhdistaa huoneheijastukset ilman onttoutta.' : 'Cleans up boomy room acoustic reflections.' },
+    { band: 4, type: 'Bell (Boxy)', freq: Math.round(boxCutFreq), gain: boxCutGain, q: boxCutQ, gainDisplay: `${boxCutGain.toFixed(1)} dB`, gainClass: boxCutGain === 0 ? 'pass' : 'cut', why: isFi ? 'Poistaa onttoa, muovista tai tynnyrimäistä sointia.' : 'Cuts hollow, cardboard resonances.' },
+    { band: 5, type: 'Bell (Presence)', freq: Math.round(presBoostFreq), gain: presBoostGain, q: presBoostQ, gainDisplay: presBoostGain > 0 ? `+${presBoostGain.toFixed(1)} dB` : '0 dB', gainClass: presBoostGain > 0 ? 'boost' : 'pass', why: isFi ? 'Parantaa puheen ymmärrettävyyttä ja läsnäoloa.' : 'Boosts speech intelligibility and crisp consonant clarity.' },
+    { band: 6, type: 'Bell (De-Harsh)', freq: Math.round(deharshFreq), gain: deharshGain, q: deharshQ, gainDisplay: `${deharshGain.toFixed(1)} dB`, gainClass: deharshGain === 0 ? 'pass' : 'cut', why: isFi ? 'Pehmentää teräviä mikrofoniheijastuksia ja ässiä.' : 'Smooths piercing resonance peaks & harsh sibilance.' },
     { band: 7, type: 'High Shelf (Air)', freq: Math.round(airShelfFreq), gain: airShelfGain, q: 0.71, gainDisplay: `+${airShelfGain.toFixed(1)} dB`, gainClass: 'boost', why: isFi ? 'Lisää studiomaista ilmavuutta äänen yläpäähän.' : 'Adds studio breathiness and open top-end sheen.' }
   ];
 
   // --- DYNAMICS: COMPRESSOR ---
-  let compRatio = '3.0 : 1';
-  let compRatioNum = 3.0;
+  let compRatio = '2.5 : 1';
+  let compRatioNum = 2.5;
   let compThreshold = Math.round(b.rmsDb - 2.5);
-  compThreshold = Math.max(-28, Math.min(-12, compThreshold));
-  let compAttack = 15;
-  let compRelease = 80;
-  let compMakeup = Math.abs(compThreshold) > 16 ? 3.5 : 2.5;
+  compThreshold = Math.max(-26, Math.min(-14, compThreshold));
+  let compAttack = 18;
+  let compRelease = 85;
+  let compMakeup = Math.abs(compThreshold) > 16 ? 2.5 : 2.0;
 
   if (target === 'radio') {
-    compRatio = '2.5 : 1';
-    compRatioNum = 2.5;
+    compRatio = '2.2 : 1';
+    compRatioNum = 2.2;
     compAttack = 25;
     compRelease = 110;
   } else if (target === 'gaming') {
-    compRatio = '4.5 : 1';
-    compRatioNum = 4.5;
-    compAttack = 10;
+    compRatio = '4.0 : 1';
+    compRatioNum = 4.0;
+    compAttack = 12;
     compRelease = 65;
     compMakeup += 1.0;
   }
 
-  // --- DYNAMICS: DE-ESSER ---
+  // --- DYNAMICS: DE-ESSER (WITH EXPLICIT RANGE & WIDTH) ---
   let deessFreq = Math.round(deharshFreq);
-  let deessThreshold = Math.round(b.rmsDb - 5);
-  deessThreshold = Math.max(-32, Math.min(-16, deessThreshold));
-  let deessReduction = sibilanceHarshness > -3.0 ? -6.0 : -4.0;
+  let deessThreshold = Math.round(b.rmsDb - 4);
+  deessThreshold = Math.max(-30, Math.min(-16, deessThreshold));
+  let deessRange = sibilanceHarshness > -3.0 ? -6.0 : -4.5;
+  let deessWidthQ = 2.0; // Medium-narrow band targeting harsh frequencies
 
   // --- DYNAMICS: NOISE GATE ---
   let gateOpenThreshold = Math.round(b.noiseFloorDb + 7);
@@ -1256,6 +1351,7 @@ function recalculateRecommendations() {
 
   currentRecommendations = {
     target,
+    intensityMode,
     micProfile,
     easyCards,
     advEq,
@@ -1270,8 +1366,11 @@ function recalculateRecommendations() {
     deesser: {
       freq: deessFreq,
       threshold: deessThreshold,
-      reduction: deessReduction,
-      q: 2.2
+      range: deessRange,
+      reduction: deessRange,
+      widthQ: deessWidthQ,
+      widthDisplay: isFi ? 'Q 2.0 (Keskikapea / Bell)' : 'Q 2.0 (Medium-Narrow / Bell)',
+      mode: 'Split-band (Bell)'
     },
     gate: {
       openThreshold: gateOpenThreshold,
@@ -1369,9 +1468,10 @@ function renderDynamicsCards() {
   `;
 
   compTipText.innerHTML = isFi 
-    ? '<strong>Vinkki:</strong> Attack 15ms päästää puheen alun terävät konsonantit (k, p, t) läpi ennen kuin kompressio puree, jolloin puhe säilyy luonnollisena.'
-    : '<strong>Tip:</strong> Attack of 15ms lets initial transients (k, p, t) punch through before clamping down, preserving natural speech articulation.';
+    ? '<strong>Vinkki:</strong> Attack 18ms päästää puheen alun terävät konsonantit (k, p, t) läpi ennen kuin kompressio puree, jolloin puhe säilyy luonnollisena.'
+    : '<strong>Tip:</strong> Attack of 18ms lets initial transients (k, p, t) punch through before clamping down, preserving natural speech articulation.';
 
+  // DE-ESSER WITH EXPLICIT RANGE & WIDTH
   const deess = currentRecommendations.deesser;
   deessParamsContainer.innerHTML = `
     <div class="param-pill">
@@ -1379,22 +1479,26 @@ function renderDynamicsCards() {
       <span class="param-val" style="color: var(--accent-purple);">${deess.freq} Hz</span>
     </div>
     <div class="param-pill">
-      <span class="param-name">${isFi ? 'Kynnysarvo (Threshold)' : 'Threshold'}</span>
+      <span class="param-name">${isFi ? 'Kynnystaso (Threshold)' : 'Threshold'}</span>
       <span class="param-val">${deess.threshold} dBFS</span>
     </div>
     <div class="param-pill">
-      <span class="param-name">${isFi ? 'Maksimivaimennus (Range)' : 'Max Reduction'}</span>
-      <span class="param-val" style="color: var(--accent-rose);">${deess.reduction} dB</span>
+      <span class="param-name" style="color: var(--accent-rose);">${isFi ? 'Range (Vaimennusvara)' : 'Range (Max Reduction)'}</span>
+      <span class="param-val" style="color: var(--accent-rose);">${deess.range} dB</span>
     </div>
     <div class="param-pill">
-      <span class="param-name">${isFi ? 'Kaistanleveys (Q)' : 'Bandwidth (Q)'}</span>
-      <span class="param-val">${deess.q}</span>
+      <span class="param-name" style="color: var(--accent-cyan);">${isFi ? 'Width (Kaistanleveys / Q)' : 'Width (Filter Q)'}</span>
+      <span class="param-val" style="font-size: 0.95rem; color: var(--accent-cyan);">${deess.widthDisplay}</span>
     </div>
   `;
 
   deessTipText.innerHTML = isFi
-    ? '<strong>Vinkki:</strong> Sijoita De-Esser ketjussa kompressorin jälkeen, jos kompressio nostaa ässiä liikaa esille.'
-    : '<strong>Tip:</strong> Place the De-Esser after the compressor if compression pulls up harsh sibilance too prominently.';
+    ? `<strong>Range & Width -ohje:</strong><br>
+       • <strong>Range (${deess.range} dB):</strong> Määrittää suurimman sallitun vaimennuksen. Tämä estää puhetta alkamasta sammaltamaan ("lisping").<br>
+       • <strong>Width (Q 2.0 / Bell):</strong> Keskikapea kaistanleveys vaimentaa nimenomaan viheltävät ässät ilman että puheen luonnollinen kirkkaus tummuu.`
+    : `<strong>Range & Width Guide:</strong><br>
+       • <strong>Range (${deess.range} dB):</strong> Limits the maximum dB reduction so your voice never lisps on hard 'S' words.<br>
+       • <strong>Width (Q 2.0 / Bell):</strong> Medium-narrow bandwidth targets only the whistling sibilance frequencies without dulling overall vocal air.`;
 
   const gate = currentRecommendations.gate;
   gateParamsContainer.innerHTML = `
@@ -1548,7 +1652,6 @@ function drawSpectrum(data) {
 
   ctx.clearRect(0, 0, width, height);
 
-  // 1. Grid Lines & Frequencies
   const gridFreqs = [30, 60, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
   ctx.strokeStyle = '#1b2432';
   ctx.lineWidth = 1;
@@ -1577,7 +1680,6 @@ function drawSpectrum(data) {
     ctx.fillText(`${db} dB`, 6, y - 4);
   }
 
-  // 2. Real-Time Spectrum Fill and Stroke
   const nyquist = audioCtx ? audioCtx.sampleRate / 2 : 24000;
   const numBins = data.length;
   const binWidth = nyquist / numBins;
@@ -1621,7 +1723,6 @@ function drawSpectrum(data) {
   ctx.lineWidth = 1.8;
   ctx.stroke();
 
-  // 3. Recommended EQ Curve Overlay (Amber / Gold)
   if (showCurveToggle.checked && currentRecommendations) {
     drawEqResponseCurve(width, height);
   }
@@ -1631,7 +1732,6 @@ function drawEqResponseCurve(width, height) {
   const adv = currentRecommendations.advEq;
   const zeroY = dbToY(-36, height);
 
-  // 0 dB reference line
   ctx.strokeStyle = 'rgba(245, 158, 11, 0.25)';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
@@ -1650,14 +1750,12 @@ function drawEqResponseCurve(width, height) {
     const freq = xToFreq(x, width);
     let totalGainDb = 0;
 
-    // HPF response
     const hpfF = adv[0].freq;
     if (freq < hpfF) {
       const octavesBelow = Math.log2(hpfF / Math.max(1, freq));
       totalGainDb -= Math.min(48, octavesBelow * 18);
     }
 
-    // Peaking Bell filters
     for (let i = 1; i < 6; i++) {
       const b = adv[i];
       if (b.gain !== 0) {
@@ -1668,7 +1766,6 @@ function drawEqResponseCurve(width, height) {
       }
     }
 
-    // High shelf
     const airF = adv[6].freq;
     const airG = adv[6].gain;
     if (freq > airF * 0.5) {
@@ -1689,7 +1786,6 @@ function drawEqResponseCurve(width, height) {
   ctx.stroke();
   ctx.shadowBlur = 0;
 
-  // Node handles
   for (let row of adv) {
     if (row.gain !== 0 || row.band === 1) {
       const nodeX = freqToX(row.freq, width);
@@ -1724,6 +1820,7 @@ function copySummaryToClipboard() {
 
   const text = isFi ? `=== VOCAL DSP COACH - ÄÄNIPROFIILI JA SUOSITUKSET ===
 Mikrofonimalli: ${r.micProfile.name}
+EQ-voimakkuus: ${r.intensityMode.toUpperCase()}
 Tavoitetyyli: ${r.target.toUpperCase()}
 Mittaustulokset: F0: ${benchmarkData.fundamentalFreq} Hz, Kohinataso: ${benchmarkData.noiseFloorDb.toFixed(1)} dBFS, Dynamiikka: ${benchmarkData.crestFactor.toFixed(1)} dB
 
@@ -1738,10 +1835,11 @@ ${r.advEq.map(b => `Band ${b.band} [${b.type}]: ${b.freq} Hz | Gain: ${b.gainDis
 
 3. DYNAMIIKKA:
 - Kompressori: Kynnys: ${r.compressor.threshold} dBFS, Suhde: ${r.compressor.ratio}, Attack: ${r.compressor.attackMs} ms, Release: ${r.compressor.releaseMs} ms, Makeup: +${r.compressor.makeupGain} dB
-- De-Esser: Taajuus: ${r.deesser.freq} Hz, Kynnys: ${r.deesser.threshold} dBFS, Vaimennus: ${r.deesser.reduction} dB
+- De-Esser: Taajuus: ${r.deesser.freq} Hz, Kynnys: ${r.deesser.threshold} dBFS, Range: ${r.deesser.range} dB, Width: ${r.deesser.widthDisplay}
 - Noise Gate: Open: ${r.gate.openThreshold} dBFS, Close: ${r.gate.closeThreshold} dBFS, Attack: ${r.gate.attackMs} ms, Hold: ${r.gate.holdMs} ms, Release: ${r.gate.releaseMs} ms
 ` : `=== VOCAL DSP COACH - VOICE PROFILE & RECOMMENDATIONS ===
 Microphone Model: ${r.micProfile.name}
+EQ Intensity: ${r.intensityMode.toUpperCase()}
 Target Style: ${r.target.toUpperCase()}
 Measurements: F0: ${benchmarkData.fundamentalFreq} Hz, Noise Floor: ${benchmarkData.noiseFloorDb.toFixed(1)} dBFS, Crest Factor: ${benchmarkData.crestFactor.toFixed(1)} dB
 
@@ -1756,7 +1854,7 @@ ${r.advEq.map(b => `Band ${b.band} [${b.type}]: ${b.freq} Hz | Gain: ${b.gainDis
 
 3. DYNAMICS:
 - Compressor: Threshold: ${r.compressor.threshold} dBFS, Ratio: ${r.compressor.ratio}, Attack: ${r.compressor.attackMs} ms, Release: ${r.compressor.releaseMs} ms, Makeup: +${r.compressor.makeupGain} dB
-- De-Esser: Frequency: ${r.deesser.freq} Hz, Threshold: ${r.deesser.threshold} dBFS, Reduction: ${r.deesser.reduction} dB
+- De-Esser: Frequency: ${r.deesser.freq} Hz, Threshold: ${r.deesser.threshold} dBFS, Range: ${r.deesser.range} dB, Width: ${r.deesser.widthDisplay}
 - Noise Gate: Open: ${r.gate.openThreshold} dBFS, Close: ${r.gate.closeThreshold} dBFS, Attack: ${r.gate.attackMs} ms, Hold: ${r.gate.holdMs} ms, Release: ${r.gate.releaseMs} ms
 `;
 
@@ -1780,9 +1878,10 @@ Lisää mikrofoniisi OBS:ssä suodattimet (Filters) tässä järjestyksessä:
    - Pitoaika (Hold): ${r.gate.holdMs} ms
    - Vapautusaika (Release): ${r.gate.releaseMs} ms
 
-2. 3-KAISTAINEN TAAJUUSKORJAIN TAI VST-PLUGARI (EQ):
-   - Matalat (Low): ${r.advEq[0].freq} Hz leikkaus / mutaleikkaus ${r.advEq[2].gainDisplay} (${r.advEq[2].freq} Hz)
-   - Keskialue (Mid): ${r.advEq[4].freq} Hz artikulaatio ${r.advEq[4].gainDisplay}
+2. TAAJUUSKORJAIN (3-Band EQ tai VST EQ):
+   - HPF: ${r.advEq[0].freq} Hz
+   - Matalat (Mud): ${r.advEq[2].gainDisplay} (${r.advEq[2].freq} Hz)
+   - Keskialue (Mid): ${r.advEq[4].gainDisplay} (${r.advEq[4].freq} Hz)
    - Korkeat (High): +${r.advEq[6].gain.toFixed(1)} dB (11 kHz)
 
 3. KOMPRESSORI (Compressor):
@@ -1792,7 +1891,13 @@ Lisää mikrofoniisi OBS:ssä suodattimet (Filters) tässä järjestyksessä:
    - Vapautusaika (Release): ${r.compressor.releaseMs} ms
    - Lähtövahvistus (Output Gain): +${r.compressor.makeupGain.toFixed(1)} dB
 
-4. RAJOITIN (Limiter):
+4. DE-ESSER (VST-plugari, esim. TDR Nova tai ReaXcomp):
+   - Kohdetaajuus (Frequency): ${r.deesser.freq} Hz
+   - Kynnys (Threshold): ${r.deesser.threshold} dB
+   - Range (Maksimivaimennus): ${r.deesser.range} dB
+   - Width (Kaistanleveys Q): ${r.deesser.widthQ}
+
+5. RAJOITIN (Limiter):
    - Kynnysarvo: -2.0 dB
    - Vapautus: 60 ms
 ` : `=== OBS STUDIO FILTER CHAIN & RECOMMENDED SETTINGS ===
@@ -1806,7 +1911,8 @@ Add filters to your microphone in OBS Studio in this order:
    - Release Time: ${r.gate.releaseMs} ms
 
 2. 3-BAND EQ OR PARAMETRIC VST (EQ):
-   - Low: High-pass at ${r.advEq[0].freq} Hz / Mud cut ${r.advEq[2].gainDisplay} at ${r.advEq[2].freq} Hz
+   - HPF: High-pass at ${r.advEq[0].freq} Hz
+   - Low: Mud cut ${r.advEq[2].gainDisplay} at ${r.advEq[2].freq} Hz
    - Mid: Presence boost ${r.advEq[4].gainDisplay} at ${r.advEq[4].freq} Hz
    - High: Air shelf +${r.advEq[6].gain.toFixed(1)} dB at 11 kHz
 
@@ -1817,7 +1923,13 @@ Add filters to your microphone in OBS Studio in this order:
    - Release: ${r.compressor.releaseMs} ms
    - Output Gain: +${r.compressor.makeupGain.toFixed(1)} dB
 
-4. LIMITER:
+4. DE-ESSER (VST Plugin, e.g. TDR Nova or ReaXcomp):
+   - Frequency: ${r.deesser.freq} Hz
+   - Threshold: ${r.deesser.threshold} dB
+   - Range (Max Reduction): ${r.deesser.range} dB
+   - Width (Q factor): ${r.deesser.widthQ}
+
+5. LIMITER:
    - Threshold: -2.0 dB
    - Release: 60 ms
 `;
@@ -1831,7 +1943,7 @@ function copyApoToClipboard() {
   if (!currentRecommendations) return;
   const adv = currentRecommendations.advEq;
   const text = `# Equalizer APO Configuration
-# Generated by Vocal DSP Coach for ${currentRecommendations.micProfile.name}
+# Generated by Vocal DSP Coach for ${currentRecommendations.micProfile.name} (${currentRecommendations.intensityMode})
 Filter 1: ON HP Fc ${adv[0].freq} Hz
 Filter 2: ON PK Fc ${adv[1].freq} Hz Gain ${adv[1].gain.toFixed(1)} dB Q ${adv[1].q.toFixed(2)}
 Filter 3: ON PK Fc ${adv[2].freq} Hz Gain ${adv[2].gain.toFixed(1)} dB Q ${adv[2].q.toFixed(2)}
