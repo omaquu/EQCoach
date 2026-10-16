@@ -1,89 +1,70 @@
 # 🎙️ Vocal DSP Coach & EQ Assistant
 
-Täysin selainpohjainen, reaaliaikainen puheäänen spektrianalysaattori ja DSP-avustaja. Sovellus analysoi mikrofonisi taajuusvastetta, huonekuminoita, ässien terävyyttä ja dynamiikkaa suoraan selaimessa Web Audio API:n avulla ilman mitään ulkoisia palvelimia tai asennuksia.
+A 100% browser-based, real-time vocal spectrum analyzer and DSP assistant. It analyzes your microphone's frequency response, room boominess, sibilance harshness, and dynamics directly in your browser using the Web Audio API—with zero backend, zero installation, and complete privacy.
 
-Suunniteltu toimimaan suoraan **GitHub Pagesissa**!
-
----
-
-## ✨ Pääominaisuudet
-
-1. **Reaaliaikainen Spektrianalysaattori & Äänialuevyöhykkeet:**
-   - 4096-pisteen FFT-taajuusanalyysi (tarkka matalilla taajuuksilla).
-   - Logaritminen asteikko (20 Hz – 20 kHz) ja dBFS-asteikko.
-   - Vokaalivyöhykkeet: *Sub <80Hz*, *Keho 80-250Hz*, *Mutaisuus 250-500Hz*, *Pahvi 500-1k*, *Nenä 1-2.5k*, *Selkeys 2.5-5k*, *Ässät 5-8.5k*, *Ilma >10k*.
-   - Reaaliaikainen **suositellun EQ-käyrän piirto** suoraan spektrin päälle (kuten FabFilter Pro-Q / iZotope Ozone).
-
-2. **10 sekunnin Ohjattu Äänitesti (Voice Diagnostic Test):**
-   - 7 sekunnin puhenäytteen tallennus: arvioi puheen perustaajuuden ($F_0$), soinnin tasapainon, dynamiikka-alueen (Crest factor) ja huipputasot.
-   - 3 sekunnin huoneen hiljaisuuden mittaus: tarkka pohjakohinan mittaus Noise Gatea varten.
-   - Mukautuva diagnoosi: kertoo suoraan onko äänessäsi liikaa läheisyyskuminaa, tunkkaisuutta tai teräviä ässiä.
-
-3. **Tavoitetyylit (Target Sound Profile):**
-   - 🎙️ **Selkeä & Erottuva (Podcast / YouTube / Striimi):** leikkaa mutaisuuden, nostaa 3-4 kHz artikulaatiota ja antaa modernin kirkkauden.
-   - 📻 **Lämmin & Syvä (Radio / Voiceover / Broadcast Low-End):** säilyttää rintaäänen ja täyteläisyyden, leikkaa vain häiriöt.
-   - 🌿 **Luonnollinen & Neutraali:** minimalistiset korjaukset luonnolliseen akustiseen puheeseen.
-   - 🎮 **Läpitunkeva (Discord / Peliääni / Meluisa tila):** tiukka portti, voimakas mutaleikkaus ja selkeä preesens.
-
-4. **Kaksitasoiset EQ-Suositukset:**
-   - **⚡ Helppo tila (Easy Mode - 3 pistettä):**
-     1. HPF (Ylipäästö / Low Cut)
-     2. Ongelmataajuuden leikkaus (Mud Cut: Frequency, Gain, Q)
-     3. Puheen selkeyden nosto (Presence Boost: Frequency, Gain, Q)
-   - **🎛️ Edistynyt tila (Advanced Parametric EQ):**
-     - 7-kaistainen täysi parametrinen taulukko (HPF, Keho, Muta, Pahvi, Artikulaatio, Sibilanssi, Ilma).
-     - Tarkat arvot: Tyyppi, Taajuus (Hz), Vahvistus (dB), Q-arvo sekä suomenkieliset perustelut.
-
-5. **Täysi Dynamiikkaprosessointi:**
-   - **Kompressori (Compressor):** Kynnystaso (Threshold), Suhde (Ratio), Attack, Release ja Makeup Gain mitoitettuna puheesi huippujen ja dynamiikka-alueen mukaan.
-   - **De-Esser (Ässävaimennin):** Kohdetaajuus (Hz), Kynnysarvo, Vaimennusmäärä ja Q-arvo kohdistettuna mitattuun ässäpiikkiin.
-   - **Kohinaportti (Noise Gate):** Avauskynnys (Open), Sulkukynnys (Close hystereesi), Attack, Hold ja Release huoneesi pohjakohinan mukaan.
-
-6. **🎧 Live A/B Kuuntelutesti:**
-   - Voit kuunnella kuulokkeilla miltä äänesi kuulostaa **RAW (puhdas mikki)** vs **PROSESSOITU (suositeltu EQ + kompressio päällä)** reaaliajassa!
-
-7. **Kopiointityökalut:**
-   - Yhdellä napilla asetukset tekstinä, suoraan **OBS Studioon** tai **Equalizer APO:on**.
+Designed and optimized to run out-of-the-box on **GitHub Pages**!
 
 ---
 
-## 🚀 Julkaisu GitHub Pagesiin (3 Helppoa Vaihetta)
+## 🌐 Language & Accessibility / Kieli
+- **Default Language:** English (EN)
+- **Suomenkielinen tila:** Napsauta yläpalkin **🇫🇮 Suomi** -painiketta vaihtaaksesi koko käyttöliittymän, ääniohjeet ja suositukset suomeksi.
 
-Koska sovellus koostuu puhtaasta HTML-, CSS- ja JavaScript-koodista (ei vaadi Node.js:ää, tietokantaa tai build-vaihetta), sen julkaiseminen ilmaiseksi nettiin käy käden käänteessä:
+---
 
-1. **Luo uusi repositorio GitHubiin:**
-   - Mene osoitteeseen [github.com/new](https://github.com/new).
-   - Anna repolle nimeksi esim. `vocal-dsp-coach`.
-   - Valitse *Public*.
+## 🔬 What is the Recommended EQ Curve and How is it Calculated?
+The recommended EQ curve is **not** a generic static preset. It is dynamically generated using 4 acoustic pillars:
 
-2. **Lataa nämä tiedostot repoon:**
+1. **Live High-Resolution FFT Spectral Analysis:**
+   - Evaluates real-time energy across 8 key vocal zones: Sub-bass (<80Hz), Chest Body (80-240Hz), Room Mud (240-480Hz), Boxiness (480-1kHz), Nasal honk (1-2.4kHz), Presence/Diction (2.4-5.2kHz), Sibilance (5.2-9kHz), and Air (>9kHz).
+2. **Microphone Acoustic Model Compensation:**
+   - **Electro-Voice RE20:** Uses patented *Variable-D* ports along the body to virtually eliminate the proximity effect (bass buildup when close). Its low-mids are naturally flat and tight, so heavy 300Hz cuts are avoided to preserve broadcast authority.
+   - **Shure SM7B:** Warm and thick in the low-mids with a rolled-off top end. It benefits from a +1.5dB to +2.5dB presence boost at 3.5kHz and a +3dB Air Shelf (10-12kHz) to open up vocal sparkle.
+   - **Røde PodMic:** Features an aggressive 7-8kHz presence bump that can produce harsh sibilance. A de-harsh dip around 7kHz is applied.
+   - **Condensers (AT2020, Blue Yeti):** Compensates for sensitive room capture, desk thumps, and high-frequency peaks.
+3. **Target Vocal Contour (Voiceover Tilt):**
+   - Compares your speech against professional broadcast target curves:
+     - 🎙️ *Clear & Articulate (Podcast / YouTube / Stream)*
+     - 📻 *Warm & Deep (Broadcast Radio / Low-End Authority)*
+     - 🌿 *Natural & Transparent (Acoustic Speech)*
+     - 🎮 *Punchy & Cutting (Discord / Gaming / Noisy Room)*
+4. **Room & Distance Correction:**
+   - Targets the exact resonant peaks caused by small room reflections and desk flutter.
+
+---
+
+## 🎛️ Key Features
+
+1. **Dual-Tier EQ Recommendations:**
+   - **⚡ Easy Mode (HPF + 3 EQ Bands):**
+     - **HPF (High-Pass Filter):** Cuts handling thumps and mechanical rumble (<80 Hz).
+     - **EQ 1 (Low-Mid Mud Cut):** Precision notch to remove muddy room boominess (Freq, Gain, Q).
+     - **EQ 2 (Mid Boxiness Cut):** Removes hollow cardboard resonance around 600 Hz (Freq, Gain, Q).
+     - **EQ 3 (High-Mid Presence Boost):** Lifts consonant articulation (k, p, t, s) at 3.4 kHz (Freq, Gain, Q).
+   - **🎛️ Advanced Mode (7-Band Parametric EQ):**
+     - Complete table with Filter Type, Frequency (Hz), Gain (dB), Q factor, and acoustic rationale.
+
+2. **Full Dynamics Suite:**
+   - **Compressor:** Threshold, Ratio, Attack (15ms to let consonants punch), Release, and Makeup Gain based on speech crest factor.
+   - **De-Esser:** Targets measured sibilant peaks (e.g., 6.8 kHz) with exact threshold and max reduction.
+   - **Noise Gate:** Hysteresis-based Open and Close thresholds calculated from room ambient noise.
+
+3. **🎧 Live A/B Headphone Audition:**
+   - Toggle real-time DSP monitoring in your headphones to compare `RAW` microphone audio with `PROCESSED` EQ and compression.
+
+4. **1-Click Export:**
+   - Direct copy for OBS Studio filters, Equalizer APO configuration, or human-readable summary.
+
+---
+
+## 🚀 How to Publish to GitHub Pages (3 Steps)
+
+1. Create a repository on [github.com/new](https://github.com/new) (e.g. `vocal-dsp-coach`).
+2. Push or upload these files:
    - `index.html`
    - `styles.css`
    - `app.js`
    - `README.md`
-   *(Voit vetää tiedostot suoraan GitHubin selaimeen "Upload files" tai ajaa `git push` komennon).*
-
-3. **Kytke GitHub Pages päälle:**
-   - Mene GitHub-repositoriossasi kohtaan: **Settings** &rarr; **Pages**.
-   - Kohdassa **Build and deployment** &rarr; **Branch**:
-     - Valitse haaraksi `main` (tai `master`).
-     - Valitse kansioksi `/ (root)`.
-     - Klikkaa **Save**.
-   - Noin 30 sekunnin kuluttua sivusi on julkisesti auki osoitteessa:
-     `https://<käyttäjänimesi>.github.io/<repositorion-nimi>/`
-
----
-
-## 💻 Paikallinen testaus omalla koneella
-
-Voit avata sivun heti myös omalla koneellasi:
-- Tuplaklikkaa `index.html` avataksesi sen selaimessa, TAI
-- Käytä VS Coden / Antigravityn Live Serveriä tai komentoa:
-  ```bash
-  npx serve .
-  # tai
-  python -m http.server 8000
-  ```
-  ja avaa `http://localhost:8000`.
-
-*Huom: Selaimen mikrofoniluvat vaativat `localhost`-osoitteen tai `https://`-suojatun yhteyden (jollainen GitHub Pages on aina automaattisesti).*
+3. Go to **Settings** &rarr; **Pages** &rarr; Select Branch **main** and Folder **/(root)** &rarr; **Save**.
+Your live site will be accessible at:  
+`https://<your-username>.github.io/<repo-name>/`
