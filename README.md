@@ -1,8 +1,9 @@
-# 🎙️ Vocal DSP Coach & EQ Assistant
+# 🎙️ EQCoach - Vocal DSP & Real-Time EQ Assistant
 
 A 100% browser-based, real-time vocal spectrum analyzer and DSP assistant. It analyzes your microphone's frequency response, room boominess, sibilance harshness, and dynamics directly in your browser using the Web Audio API—with zero backend, zero installation, and complete privacy.
 
-Designed and optimized to run out-of-the-box on **GitHub Pages**!
+Designed and optimized to run out-of-the-box on **GitHub Pages**:  
+👉 **[https://omaquu.github.io/EQCoach/](https://omaquu.github.io/EQCoach/)**
 
 ---
 
@@ -17,6 +18,7 @@ The recommended EQ curve is **not** a generic static preset. It is dynamically g
 
 1. **Live High-Resolution FFT Spectral Analysis:**
    - Evaluates real-time energy across 8 key vocal zones: Sub-bass (<80Hz), Chest Body (80-240Hz), Room Mud (240-480Hz), Boxiness (480-1kHz), Nasal honk (1-2.4kHz), Presence/Diction (2.4-5.2kHz), Sibilance (5.2-9kHz), and Air (>9kHz).
+   - Features real-time **Nasal Resonance Detection** (850–1850 Hz) to pinpoint and notch out individual vocal honk.
 2. **Microphone Acoustic Model Compensation:**
    - **Electro-Voice RE20:** Uses patented *Variable-D* ports along the body to virtually eliminate the proximity effect (bass buildup when close). Its low-mids are naturally flat and tight, so heavy 300Hz cuts are avoided to preserve broadcast authority.
    - **Shure SM7B:** Warm and thick in the low-mids with a rolled-off top end. It benefits from a +1.5dB to +2.5dB presence boost at 3.5kHz and a +3dB Air Shelf (10-12kHz) to open up vocal sparkle.
@@ -28,8 +30,11 @@ The recommended EQ curve is **not** a generic static preset. It is dynamically g
      - 📻 *Warm & Deep (Broadcast Radio / Low-End Authority)*
      - 🌿 *Natural & Transparent (Acoustic Speech)*
      - 🎮 *Punchy & Cutting (Discord / Gaming / Noisy Room)*
-4. **Room & Distance Correction:**
-   - Targets the exact resonant peaks caused by small room reflections and desk flutter.
+4. **Target Fixes & Traits:**
+   - 👃 *Nasal Honk:* Surgical Q 3.2 notch at measured formant frequency.
+   - ⚡ *High / Thin:* Warms chest fundamentals (220–250 Hz) and softens harshness.
+   - 🔊 *Deep / Boomy:* Keeps HPF low (65–70 Hz) and clears room mud.
+   - 🔪 *Harsh / Piercing:* Smooths 3.5–5 kHz and engages tighter de-essing.
 
 ---
 
@@ -39,14 +44,14 @@ The recommended EQ curve is **not** a generic static preset. It is dynamically g
    - **⚡ Easy Mode (HPF + 3 EQ Bands):**
      - **HPF (High-Pass Filter):** Cuts handling thumps and mechanical rumble (<80 Hz).
      - **EQ 1 (Low-Mid Mud Cut):** Precision notch to remove muddy room boominess (Freq, Gain, Q).
-     - **EQ 2 (Mid Boxiness Cut):** Removes hollow cardboard resonance around 600 Hz (Freq, Gain, Q).
+     - **EQ 2 (Mid Boxiness / Nasal Notch):** Removes hollow cardboard resonance or targets measured nasality (Freq, Gain, Q).
      - **EQ 3 (High-Mid Presence Boost):** Lifts consonant articulation (k, p, t, s) at 3.4 kHz (Freq, Gain, Q).
    - **🎛️ Advanced Mode (7-Band Parametric EQ):**
      - Complete table with Filter Type, Frequency (Hz), Gain (dB), Q factor, and acoustic rationale.
 
 2. **Full Dynamics Suite:**
    - **Compressor:** Threshold, Ratio, Attack (15ms to let consonants punch), Release, and Makeup Gain based on speech crest factor.
-   - **De-Esser:** Targets measured sibilant peaks (e.g., 6.8 kHz) with exact threshold and max reduction.
+   - **De-Esser:** Targets measured sibilant peaks with explicit **Range** (-4.5 to -5 dB) and **Width / Q** (Q 2.0 Bell filter).
    - **Noise Gate:** Hysteresis-based Open and Close thresholds calculated from room ambient noise.
 
 3. **🎧 Live A/B Headphone Audition:**
@@ -57,14 +62,14 @@ The recommended EQ curve is **not** a generic static preset. It is dynamically g
 
 ---
 
-## 🚀 How to Publish to GitHub Pages (3 Steps)
+## 🚀 GitHub Pages Deployment
 
-1. Create a repository on [github.com/new](https://github.com/new) (e.g. `vocal-dsp-coach`).
-2. Push or upload these files:
-   - `index.html`
-   - `styles.css`
-   - `app.js`
-   - `README.md`
-3. Go to **Settings** &rarr; **Pages** &rarr; Select Branch **main** and Folder **/(root)** &rarr; **Save**.
-Your live site will be accessible at:  
-`https://<your-username>.github.io/<repo-name>/`
+Live site is published at:  
+👉 **[https://omaquu.github.io/EQCoach/](https://omaquu.github.io/EQCoach/)**
+
+To enable GitHub Pages in your repo settings:
+1. Go to **Settings** &rarr; **Pages**.
+2. Under **Build and deployment** &rarr; **Source**:
+   - Choose **GitHub Actions** (automated via `.github/workflows/deploy.yml`), OR
+   - Choose **Deploy from a branch** &rarr; branch: `main`, folder: `/ (root)` &rarr; **Save**.
+
